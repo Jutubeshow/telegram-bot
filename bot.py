@@ -185,10 +185,9 @@ def city_click(call):
     
     safe_send(call.message.chat.id, call.message.id, photo_file_id, t['how_much'], markup)
 
-# Временный обработчик для получения file_id фото
+# Обработчик фото: отвечает на любую отправленную картинку
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
-    # Берем самое высокое качество картинки (последний элемент в списке photo)
     file_id = message.photo[-1].file_id
     bot.reply_to(message, f"Вот file_id твоей картинки:\n\n`{file_id}`", parse_mode='Markdown')
 
