@@ -55,7 +55,7 @@ TEXTS = {
         'q2_btn': '2 გრ - 58 USDT',
         'q5_btn': '5 გრ - 135 USDT',
         'gift_info': (
-            "🎁 **საჩუქარი**\n\n"
+            "🎁 საჩუქარი\n\n"
             "1. იყიდე 10 - ჯერ და მიიღე მე-11 საჩუქრად;\n"
             "2. მოიწვიე 10 მეგობარი, რომლებიც მინიმუმ ერთხელ იყიდიან და ასევე მიიღე 1 გრ საჩუქრად."
         )
@@ -72,7 +72,7 @@ TEXTS = {
         'q2_btn': '2 g - 58 USDT',
         'q5_btn': '5 g - 135 USDT',
         'gift_info': (
-            "🎁 **Gift Offer**\n\n"
+            "🎁 Gift Offer\n\n"
             "1. Buy 10 times and get the 11th for free as a gift;\n"
             "2. Invite 10 friends who make at least 1 purchase and get 1 g as a gift."
         )
@@ -89,7 +89,7 @@ TEXTS = {
         'q2_btn': '2 g - 58 USDT',
         'q5_btn': '5 g - 135 USDT',
         'gift_info': (
-            "🎁 **Подарок**\n\n"
+            "🎁 Подарок\n\n"
             "1. Купи 10 раз и получи 11-ый в подарок.\n"
             "2. Пригласи 10 друзей, которые хотя бы 1 раз купят и получи подарок."
         )
@@ -100,7 +100,7 @@ def safe_send(chat_id, message_id, photo_or_url, text, reply_markup):
     if photo_or_url:
         try:
             bot.delete_message(chat_id, message_id)
-            bot.send_photo(chat_id, photo=photo_or_url, caption=text, reply_markup=reply_markup, parse_mode='Markdown')
+            bot.send_photo(chat_id, photo=photo_or_url, caption=text, reply_markup=reply_markup)
             return
         except Exception:
             pass
@@ -109,7 +109,7 @@ def safe_send(chat_id, message_id, photo_or_url, text, reply_markup):
         bot.delete_message(chat_id, message_id)
     except Exception:
         pass
-    bot.send_message(chat_id, text=text, reply_markup=reply_markup, parse_mode='Markdown')
+    bot.send_message(chat_id, text=text, reply_markup=reply_markup)
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
@@ -184,18 +184,17 @@ def city_click(call):
     
     safe_send(call.message.chat.id, call.message.id, photo_file_id, t['how_much'], markup)
 
-# 3. Обработчик фото (отправленных как картинка)
+# 3. Обработчик сжатых фото
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     file_id = message.photo[-1].file_id
-    bot.reply_to(message, f"Вот file_id твоей картинки:\n\n`{file_id}`", parse_mode='Markdown')
+    bot.send_message(message.chat.id, f"ID картинки:\n\n{file_id}")
 
-# 4. Обработчик документов (на случай если картинка отправлена без сжатия как файл)
+# 4. Обработчик фото, отправленных без сжатия (файлом)
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
-    if message.document.mime_type and message.document.mime_type.startswith('image/'):
-        file_id = message.document.file_id
-        bot.reply_to(message, f"Вот file_id файла картинки:\n\n`{file_id}`", parse_mode='Markdown')
+    file_id = message.document.file_id
+    bot.send_message(message.chat.id, f"ID файла:\n\n{file_id}")
 
-# Запуск постоянного опроса сервера
+# 5. Запуск бота
 bot.infinity_polling(skip_pending=True)
