@@ -41,7 +41,7 @@ LANG_PHOTOS = {
 # Картинки разделены по городам и языкам
 CITY_PHOTOS = {
     'amb': {
-        'geo': 'AgACAgIAAxkBAAONarasx_pBx0qle13mUv0ZopMBy58AAkkgaxvZVbBJDx5fGnJkpvABAAMCAAN5AAM9BA',
+        'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
         'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
         'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
     },
