@@ -1,4 +1,5 @@
 import os
+import time
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import telebot
@@ -20,7 +21,7 @@ def run_health_check_server():
 threading.Thread(target=run_health_check_server, daemon=True).start()
 
 # 2. Токен бота
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = '8777407228:AAFJIg2zPMKJFGwk8qzKVa2SWUBUO51qnG8'
 bot = telebot.TeleBot(TOKEN)
 
 try:
@@ -36,10 +37,18 @@ LANG_PHOTOS = {
     'rus': 'AgACAgIAAxkBAAP1ar9gIm7E-2Ir7MFhW1jXOBmA68YAApwZaxtAG_lJs5Pvj4cqa5YBAAMCAAN5AAM9BA'
 }
 
+# Картинки разделены по городам и языкам
 CITY_PHOTOS = {
-    'geo': 'AgACAgIAAxkBAAONarasx_pBx0qle13mUv0ZopMBy58AAkkgaxvZVbBJDx5fGnJkpvABAAMCAAN5AAM9BA',
-    'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
-    'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+    'amb': {
+        'geo': 'AgACAgIAAxkBAAONarasx_pBx0qle13mUv0ZopMBy58AAkkgaxvZVbBJDx5fGnJkpvABAAMCAAN5AAM9BA',
+        'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
+        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+    },
+    'oni': {
+        'geo': None,
+        'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
+        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+    }
 }
 
 CITIES = {
@@ -60,8 +69,8 @@ TEXTS = {
         'ambrolauri_btn': 'ამბროლაური',
         'oni_btn': 'ონი',
         'gift_btn': '🎁 საჩუქარი',
-        'back_btn': '⬅ უკან',
-        'how_much': 'აირჩიე რაოდენობა!',
+        'back_btn': '⬅️ უკან',
+        'how_much': 'რამდენი გინდა?',
         'q05_btn': '0.5 გრ - 16 USDT (40 GEL)',
         'q1_btn': '1 გრ - 31 USDT (80 GEL)',
         'q2_btn': '2 გრ - 58 USDT (150 GEL)',
@@ -71,7 +80,7 @@ TEXTS = {
             "1. იყიდე 10 - ჯერ და მიიღე მე-11 საჩუქრად;\n"
             "2. მოიწვიე 10 მეგობარი, რომლებიც მინიმუმ ერთხელ იყიდიან და ასევე მიიღე 1 გრ საჩუქრად."
         ),
-        'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე __გადახდას!__",
+        'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას!",
         'pay_btn': "💳 გადახდა ({price})",
         'how_to_pay_btn': "ℹ️ როგორ გადაიხდო მარტივად"
     },
@@ -81,7 +90,7 @@ TEXTS = {
         'oni_btn': 'Oni',
         'gift_btn': '🎁 Gift',
         'back_btn': '⬅️ Back',
-        'how_much': 'Select the quantity!',
+        'how_much': 'How much do you want?',
         'q05_btn': '0.5 g - 16 USDT (40 GEL)',
         'q1_btn': '1 g - 31 USDT (80 GEL)',
         'q2_btn': '2 g - 58 USDT (150 GEL)',
@@ -91,7 +100,7 @@ TEXTS = {
             "1. Buy 10 times and get the 11th for free as a gift;\n"
             "2. Invite 10 friends who make at least 1 purchase and get 1 g as a gift."
         ),
-        'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click __payment!__",
+        'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment!",
         'pay_btn': "💳 Pay ({price})",
         'how_to_pay_btn': "ℹ️ How to pay easily"
     },
@@ -101,7 +110,7 @@ TEXTS = {
         'oni_btn': 'Они',
         'gift_btn': '🎁 Подарок',
         'back_btn': '⬅️ Назад',
-        'how_much': 'Выберите количество!',
+        'how_much': 'Сколько ты хочешь?',
         'q05_btn': '0.5 г - 16 USDT (40 GEL)',
         'q1_btn': '1 г - 31 USDT (80 GEL)',
         'q2_btn': '2 г - 58 USDT (150 GEL)',
@@ -111,7 +120,7 @@ TEXTS = {
             "1. Купи 10 раз и получи 11-ый в подарок.\n"
             "2. Пригласи 10 друзей, которые хотя бы 1 раз купят и получи подарок."
         ),
-        'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми __оплату__!",
+        'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату!",
         'pay_btn': "💳 Оплата ({price})",
         'how_to_pay_btn': "ℹ️ Как легко оплатить"
     }
@@ -192,7 +201,7 @@ def city_click(call):
     lang = parts[3]
     
     t = TEXTS[lang]
-    photo_file_id = CITY_PHOTOS.get(lang)
+    photo_file_id = CITY_PHOTOS.get(city, {}).get(lang)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
@@ -205,7 +214,7 @@ def city_click(call):
     
     safe_send(call.message.chat.id, call.message.id, photo_file_id, t['how_much'], markup)
 
-# 5. Обработчик выбора количества товара и перехода к оплате
+# Выбор количества товара
 @bot.callback_query_handler(func=lambda call: call.data.startswith('qty_'))
 def qty_click(call):
     bot.answer_callback_query(call.id)
@@ -233,30 +242,34 @@ def qty_click(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"go_city_{city_key}_{lang}")
     )
     
-    photo_file_id = CITY_PHOTOS.get(lang)
+    photo_file_id = CITY_PHOTOS.get(city_key, {}).get(lang)
     safe_send(call.message.chat.id, call.message.id, photo_file_id, text, markup, parse_mode='Markdown')
 
-# 6. Заглушка для кнопки "Как легко оплатить"
+# Заглушка для "Как легко оплатить"
 @bot.callback_query_handler(func=lambda call: call.data.startswith('howpay_'))
 def how_pay_click(call):
     bot.answer_callback_query(call.id, "Инструкция появится позже", show_alert=True)
 
-# 7. Заглушка для кнопки "Оплата"
+# Заглушка для "Оплата"
 @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
 def pay_click(call):
     bot.answer_callback_query(call.id, "Переход к оплате появится позже", show_alert=True)
 
-# 8. Обработчик сжатых фото
+# Обработчик сжатых фото
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     file_id = message.photo[-1].file_id
     bot.send_message(message.chat.id, f"ID картинки:\n\n{file_id}")
 
-# 9. Обработчик фото, отправленных без сжатия (файлом)
+# Обработчик документов
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
     file_id = message.document.file_id
     bot.send_message(message.chat.id, f"ID файла:\n\n{file_id}")
 
-# 10. Запуск бота
-bot.infinity_polling(skip_pending=True)
+# Авто-перезапуск бота при сбоях сети
+while True:
+    try:
+        bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
+    except Exception as e:
+        time.sleep(5)
