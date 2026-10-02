@@ -32,7 +32,7 @@ except Exception:
 START_PHOTO_URL = 'https://i.ibb.co/Gfj8swsV/Untitled21.jpg'
 
 LANG_PHOTOS = {
-    'geo': 'AgACAgIAAxkBAAOBararlqGVoGBD7wKJ6huPpS6f6-YAAuQjaxuXHbFJEu-o-AVVgLYBAAMCAAN5AAM9BA',
+    'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
     'eng': None,
     'rus': 'AgACAgIAAxkBAAP1ar9gIm7E-2Ir7MFhW1jXOBmA68YAApwZaxtAG_lJs5Pvj4cqa5YBAAMCAAN5AAM9BA'
 }
@@ -45,7 +45,7 @@ CITY_PHOTOS = {
         'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
     },
     'oni': {
-        'geo': None,
+        'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
         'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
         'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
     }
@@ -122,7 +122,7 @@ TEXTS = {
         ),
         'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату!",
         'pay_btn': "💳 Оплата ({price})",
-        'how_to_pay_btn': "ℹ️ Как легко оплатить"
+        'how_to_pay_btn': "ℹ️️ Как легко оплатить"
     }
 }
 
