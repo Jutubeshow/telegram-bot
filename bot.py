@@ -20,7 +20,7 @@ def run_health_check_server():
 threading.Thread(target=run_health_check_server, daemon=True).start()
 
 # 2. Токен бота
-TOKEN = '8777407228:AAGMfJahau4lMir5XEHHs7KNiJaa6RgeT3s'
+TOKEN = os.environ.get("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
 try:
@@ -33,7 +33,7 @@ START_PHOTO_URL = 'https://i.ibb.co/Gfj8swsV/Untitled21.jpg'
 LANG_PHOTOS = {
     'geo': 'AgACAgIAAxkBAAOBararlqGVoGBD7wKJ6huPpS6f6-YAAuQjaxuXHbFJEu-o-AVVgLYBAAMCAAN5AAM9BA',
     'eng': None,
-    'rus': None
+    'rus': 'AgACAgIAAxkBAAP1ar9gIm7E-2Ir7MFhW1jXOBmA68YAApwZaxtAG_lJs5Pvj4cqa5YBAAMCAAN5AAM9BA'
 }
 
 CITY_PHOTOS = {
@@ -42,23 +42,38 @@ CITY_PHOTOS = {
     'rus': None
 }
 
+CITIES = {
+    'amb': {'geo': 'ამბროლაური', 'eng': 'Ambrolauri', 'rus': 'Амбролаури'},
+    'oni': {'geo': 'ონი', 'eng': 'Oni', 'rus': 'Они'}
+}
+
+QUANTITIES = {
+    '05': {'geo': '0.5 გრ', 'eng': '0.5 g', 'rus': '0.5 г', 'price': '16 USDT (40 GEL)'},
+    '1': {'geo': '1 გრ', 'eng': '1 g', 'rus': '1 г', 'price': '31 USDT (80 GEL)'},
+    '2': {'geo': '2 გრ', 'eng': '2 g', 'rus': '2 г', 'price': '58 USDT (150 GEL)'},
+    '5': {'geo': '5 გრ', 'eng': '5 g', 'rus': '5 г', 'price': '135 USDT (350 GEL)'}
+}
+
 TEXTS = {
     'geo': {
         'select_city': 'აირჩიეთ ქალაქი',
         'ambrolauri_btn': 'ამბროლაური',
         'oni_btn': 'ონი',
         'gift_btn': '🎁 საჩუქარი',
-        'back_btn': '⬅️ უკან',
+        'back_btn': '⬅ უკან',
         'how_much': 'რამდენი გინდა?',
-        'q05_btn': '0.5 გრ - 16 USDT',
-        'q1_btn': '1 გრ - 31 USDT',
-        'q2_btn': '2 გრ - 58 USDT',
-        'q5_btn': '5 გრ - 135 USDT',
+        'q05_btn': '0.5 გრ - 16 USDT (40 GEL)',
+        'q1_btn': '1 გრ - 31 USDT (80 GEL)',
+        'q2_btn': '2 გრ - 58 USDT (150 GEL)',
+        'q5_btn': '5 გრ - 135 USDT (350 GEL)',
         'gift_info': (
             "🎁 საჩუქარი\n\n"
             "1. იყიდე 10 - ჯერ და მიიღე მე-11 საჩუქრად;\n"
             "2. მოიწვიე 10 მეგობარი, რომლებიც მინიმუმ ერთხელ იყიდიან და ასევე მიიღე 1 გრ საჩუქრად."
-        )
+        ),
+        'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე __გადახდას!__",
+        'pay_btn': "💳 გადახდა ({price})",
+        'how_to_pay_btn': "ℹ️ როგორ გადაიხდო მარტივად"
     },
     'eng': {
         'select_city': 'Select a location',
@@ -67,15 +82,18 @@ TEXTS = {
         'gift_btn': '🎁 Gift',
         'back_btn': '⬅️ Back',
         'how_much': 'How much do you want?',
-        'q05_btn': '0.5 g - 16 USDT',
-        'q1_btn': '1 g - 31 USDT',
-        'q2_btn': '2 g - 58 USDT',
-        'q5_btn': '5 g - 135 USDT',
+        'q05_btn': '0.5 g - 16 USDT (40 GEL)',
+        'q1_btn': '1 g - 31 USDT (80 GEL)',
+        'q2_btn': '2 g - 58 USDT (150 GEL)',
+        'q5_btn': '5 g - 135 USDT (350 GEL)',
         'gift_info': (
             "🎁 Gift Offer\n\n"
             "1. Buy 10 times and get the 11th for free as a gift;\n"
             "2. Invite 10 friends who make at least 1 purchase and get 1 g as a gift."
-        )
+        ),
+        'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click __payment!__",
+        'pay_btn': "💳 Pay ({price})",
+        'how_to_pay_btn': "ℹ️ How to pay easily"
     },
     'rus': {
         'select_city': 'Выберите город',
@@ -84,23 +102,26 @@ TEXTS = {
         'gift_btn': '🎁 Подарок',
         'back_btn': '⬅️ Назад',
         'how_much': 'Сколько ты хочешь?',
-        'q05_btn': '0.5 г - 16 USDT',
-        'q1_btn': '1 g - 31 USDT',
-        'q2_btn': '2 g - 58 USDT',
-        'q5_btn': '5 g - 135 USDT',
+        'q05_btn': '0.5 г - 16 USDT (40 GEL)',
+        'q1_btn': '1 г - 31 USDT (80 GEL)',
+        'q2_btn': '2 г - 58 USDT (150 GEL)',
+        'q5_btn': '5 г - 135 USDT (350 GEL)',
         'gift_info': (
             "🎁 Подарок\n\n"
             "1. Купи 10 раз и получи 11-ый в подарок.\n"
             "2. Пригласи 10 друзей, которые хотя бы 1 раз купят и получи подарок."
-        )
+        ),
+        'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми __оплату__!",
+        'pay_btn': "💳 Оплата ({price})",
+        'how_to_pay_btn': "ℹ️ Как легко оплатить"
     }
 }
 
-def safe_send(chat_id, message_id, photo_or_url, text, reply_markup):
+def safe_send(chat_id, message_id, photo_or_url, text, reply_markup, parse_mode=None):
     if photo_or_url:
         try:
             bot.delete_message(chat_id, message_id)
-            bot.send_photo(chat_id, photo=photo_or_url, caption=text, reply_markup=reply_markup)
+            bot.send_photo(chat_id, photo=photo_or_url, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
             return
         except Exception:
             pass
@@ -109,7 +130,7 @@ def safe_send(chat_id, message_id, photo_or_url, text, reply_markup):
         bot.delete_message(chat_id, message_id)
     except Exception:
         pass
-    bot.send_message(chat_id, text=text, reply_markup=reply_markup)
+    bot.send_message(chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
@@ -184,17 +205,58 @@ def city_click(call):
     
     safe_send(call.message.chat.id, call.message.id, photo_file_id, t['how_much'], markup)
 
-# 3. Обработчик сжатых фото
+# 5. Обработчик выбора количества товара и перехода к оплате
+@bot.callback_query_handler(func=lambda call: call.data.startswith('qty_'))
+def qty_click(call):
+    bot.answer_callback_query(call.id)
+    parts = call.data.split('_')
+    qty_key = parts[1]
+    city_key = parts[2]
+    lang = parts[3]
+    
+    t = TEXTS[lang]
+    city_name = CITIES[city_key][lang]
+    qty_info = QUANTITIES[qty_key]
+    qty_name = qty_info[lang]
+    price = qty_info['price']
+    
+    text = t['checkout_text'].format(
+        city=city_name,
+        qty=qty_name,
+        price=price
+    )
+    
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton(t['pay_btn'].format(price=price), callback_data=f"pay_{qty_key}_{city_key}_{lang}"),
+        types.InlineKeyboardButton(t['how_to_pay_btn'], callback_data=f"howpay_{lang}"),
+        types.InlineKeyboardButton(t['back_btn'], callback_data=f"go_city_{city_key}_{lang}")
+    )
+    
+    photo_file_id = CITY_PHOTOS.get(lang)
+    safe_send(call.message.chat.id, call.message.id, photo_file_id, text, markup, parse_mode='Markdown')
+
+# 6. Заглушка для кнопки "Как легко оплатить"
+@bot.callback_query_handler(func=lambda call: call.data.startswith('howpay_'))
+def how_pay_click(call):
+    bot.answer_callback_query(call.id, "Инструкция появится позже", show_alert=True)
+
+# 7. Заглушка для кнопки "Оплата"
+@bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
+def pay_click(call):
+    bot.answer_callback_query(call.id, "Переход к оплате появится позже", show_alert=True)
+
+# 8. Обработчик сжатых фото
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     file_id = message.photo[-1].file_id
     bot.send_message(message.chat.id, f"ID картинки:\n\n{file_id}")
 
-# 4. Обработчик фото, отправленных без сжатия (файлом)
+# 9. Обработчик фото, отправленных без сжатия (файлом)
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
     file_id = message.document.file_id
     bot.send_message(message.chat.id, f"ID файла:\n\n{file_id}")
 
-# 5. Запуск бота
+# 10. Запуск бота
 bot.infinity_polling(skip_pending=True)
