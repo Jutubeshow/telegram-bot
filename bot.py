@@ -4,7 +4,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import telebot
 from telebot import types
 
-# 1. Быстрый запуск веб-сервера для Render
+# 1. Веб-сервер для проверки работоспособности (Health Check для Render)
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -16,12 +16,11 @@ def run_health_check_server():
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-# Запускаем поток сервера мгновенно при старте
-server_thread = threading.Thread(target=run_health_check_server, daemon=True)
-server_thread.start()
+# Запускаем сервер в отдельном фоновом потоке
+threading.Thread(target=run_health_check_server, daemon=True).start()
 
-# 2. Токен бота (проверь его в BotFather!)
-TOKEN = '8777407228:AAFw7FMHI4uc_L4GMP_Wt3RZ5-g9tGS_VnI'
+# 2. Токен бота
+TOKEN = '8777407228:AAFJIg2zPMKJFGwk8qzKVa2SWUBUO51qnG8'
 bot = telebot.TeleBot(TOKEN)
 
 try:
@@ -185,10 +184,18 @@ def city_click(call):
     
     safe_send(call.message.chat.id, call.message.id, photo_file_id, t['how_much'], markup)
 
-# Обработчик фото: отвечает на любую отправленную картинку
+# 3. Обработчик фото (отправленных как картинка)
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     file_id = message.photo[-1].file_id
     bot.reply_to(message, f"Вот file_id твоей картинки:\n\n`{file_id}`", parse_mode='Markdown')
 
+# 4. Обработчик документов (на случай если картинка отправлена без сжатия как файл)
+@bot.message_handler(content_types=['document'])
+def handle_document(message):
+    if message.document.mime_type and message.document.mime_type.startswith('image/'):
+        file_id = message.document.file_id
+        bot.reply_to(message, f"Вот file_id файла картинки:\n\n`{file_id}`", parse_mode='Markdown')
+
+# Запуск постоянного опроса сервера
 bot.infinity_polling(skip_pending=True)
