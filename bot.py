@@ -38,8 +38,8 @@ LANG_PHOTOS = {
 
 CITY_PHOTOS = {
     'geo': 'AgACAgIAAxkBAAONarasx_pBx0qle13mUv0ZopMBy58AAkkgaxvZVbBJDx5fGnJkpvABAAMCAAN5AAM9BA',
-    'eng': None,
-    'rus': None
+    'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
+    'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
 }
 
 CITIES = {
@@ -61,7 +61,7 @@ TEXTS = {
         'oni_btn': 'ონი',
         'gift_btn': '🎁 საჩუქარი',
         'back_btn': '⬅ უკან',
-        'how_much': 'რამდენი გინდა?',
+        'how_much': 'აირჩიე რაოდენობა!',
         'q05_btn': '0.5 გრ - 16 USDT (40 GEL)',
         'q1_btn': '1 გრ - 31 USDT (80 GEL)',
         'q2_btn': '2 გრ - 58 USDT (150 GEL)',
@@ -81,7 +81,7 @@ TEXTS = {
         'oni_btn': 'Oni',
         'gift_btn': '🎁 Gift',
         'back_btn': '⬅️ Back',
-        'how_much': 'How much do you want?',
+        'how_much': 'Select the quantity!',
         'q05_btn': '0.5 g - 16 USDT (40 GEL)',
         'q1_btn': '1 g - 31 USDT (80 GEL)',
         'q2_btn': '2 g - 58 USDT (150 GEL)',
@@ -101,7 +101,7 @@ TEXTS = {
         'oni_btn': 'Они',
         'gift_btn': '🎁 Подарок',
         'back_btn': '⬅️ Назад',
-        'how_much': 'Сколько ты хочешь?',
+        'how_much': 'Выберите количество!',
         'q05_btn': '0.5 г - 16 USDT (40 GEL)',
         'q1_btn': '1 г - 31 USDT (80 GEL)',
         'q2_btn': '2 г - 58 USDT (150 GEL)',
