@@ -20,7 +20,7 @@ def run_health_check_server():
 threading.Thread(target=run_health_check_server, daemon=True).start()
 
 # 2. Токен бота
-TOKEN = '8777407228:AAFJIg2zPMKJFGwk8qzKVa2SWUBUO51qnG8'
+TOKEN = '8777407228:AAGMfJahau4lMir5XEHHs7KNiJaa6RgeT3s'
 bot = telebot.TeleBot(TOKEN)
 
 try:
