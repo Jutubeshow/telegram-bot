@@ -29,7 +29,8 @@ try:
 except Exception:
     pass
 
-START_PHOTO_URL = 'https://i.ibb.co/Gfj8swsV/Untitled21.jpg'
+START_PHOTO_URL = 'AgACAgIAAxkBAAIBUmq_fDsajOlx-YkNyDqYbIF7QFuRAAJPGmsbQBv5SZLWUpZchATZAQADAgADeQADPQQ'
+GIFT_PHOTO_URL = 'AgACAgIAAxkBAAIBR2q_eRPFGQp8JAMifVoN1IFNqjqSAAIzGmsbQBv5SX4QPXKLJwLZAQADAgADeQADPQQ'
 
 LANG_PHOTOS = {
     'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
@@ -122,7 +123,7 @@ TEXTS = {
         ),
         'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату!",
         'pay_btn': "💳 Оплата ({price})",
-        'how_to_pay_btn': "ℹ️️ Как легко оплатить"
+        'how_to_pay_btn': "ℹ Как легко оплатить"
     }
 }
 
@@ -184,14 +185,14 @@ def show_gift_info(call):
     bot.answer_callback_query(call.id)
     lang = call.data.split('_')[2]
     t = TEXTS[lang]
-    photo_file_id = LANG_PHOTOS.get(lang)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"setlang_{lang}")
     )
     
-    safe_send(call.message.chat.id, call.message.id, photo_file_id, t['gift_info'], markup)
+    # Изменено: теперь используется константа GIFT_PHOTO_URL для показа этой картинки
+    safe_send(call.message.chat.id, call.message.id, GIFT_PHOTO_URL, t['gift_info'], markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('go_city_'))
 def city_click(call):
