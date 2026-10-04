@@ -32,6 +32,7 @@ except Exception:
 START_PHOTO_URL = 'AgACAgIAAxkBAAIBUmq_fDsajOlx-YkNyDqYbIF7QFuRAAJPGmsbQBv5SZLWUpZchATZAQADAgADeQADPQQ'
 GIFT_PHOTO_URL = 'AgACAgIAAxkBAAIBR2q_eRPFGQp8JAMifVoN1IFNqjqSAAIzGmsbQBv5SX4QPXKLJwLZAQADAgADeQADPQQ'
 
+# Фотографии для меню выбора языков
 LANG_PHOTOS = {
     'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
     'eng': 'AgACAgIAAxkBAAIBr2rA1DjaQcToRo504eUPYDv9jZsfAALhH2sbzA0JSuhWUxcNELOqAQADAgADeQADPQQ',
@@ -191,7 +192,6 @@ def show_gift_info(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"setlang_{lang}")
     )
     
-    # Изменено: теперь используется константа GIFT_PHOTO_URL для показа этой картинки
     safe_send(call.message.chat.id, call.message.id, GIFT_PHOTO_URL, t['gift_info'], markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('go_city_'))
