@@ -29,29 +29,35 @@ try:
 except Exception:
     pass
 
-# === БЛОК КАРТИНОК (СБРОШЕНО) ===
-START_PHOTO_URL = ''
-GIFT_PHOTO_URL = ''
+# === БЛОК КАРТИНОК ===
+START_PHOTO_URL = 'AgACAgIAAxkBAAIBUmq_fDsajOlx-YkNyDqYbIF7QFuRAAJPGmsbQBv5SZLWUpZchATZAQADAgADeQADPQQ'
 
-# 1️⃣ Картинки для меню выбора языка
+# 1️⃣ Картинки для меню выбора языка (показываются после выбора языка)
 LANG_PHOTOS = {
-    'geo': '',
-    'eng': '',
-    'rus': ''
+    'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
+    'eng': 'AgACAgIAAxkBAAIBr2rA1DjaQcToRo504eUPYDv9jZsfAALhH2sbzA0JSuhWUxcNELOqAQADAgADeQADPQQ',
+    'rus': 'AgACAgIAAxkBAAP1ar9gIm7E-2Ir7MFhW1jXOBmA68YAApwZaxtAG_lJs5Pvj4cqa5YBAAMCAAN5AAM9BA'
 }
 
-# 2️⃣ Картинки для городов
+# 2️⃣ Картинки для городов (зависят от города и языка)
 CITY_PHOTOS = {
     'amb': {
-        'geo': '',
-        'eng': '',
-        'rus': ''
+        'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
+        'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
+        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
     },
     'oni': {
-        'geo': '',
-        'eng': '',
-        'rus': ''
+        'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
+        'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
+        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
     }
+}
+
+# 3️⃣ Картинки для разделов «Подарок»
+GIFT_PHOTOS = {
+    'geo': 'AgACAgIAAxkBAAIB4WrBx-Ka1RIDWUHRRb2tDZoiibNrAAJhG2sb_44RSigSkXTC1cvKAQADAgADeQADPQQ',
+    'eng': 'AgACAgIAAxkBAAIB32rBx95PvWSAU4S4dzyXoklrHBQVAAJgG2sb_44RSjndeYhy3nr6AQADAgADeQADPQQ',
+    'rus': 'AgACAgIAAxkBAAIB3WrBx9kSqxhilmFiEGASEvaTnAVRAAJfG2sb_44RSr_9z3haPjsUAQADAgADeQADPQQ'
 }
 
 CITIES = {
@@ -187,13 +193,14 @@ def show_gift_info(call):
     bot.answer_callback_query(call.id)
     lang = call.data.split('_')[2]
     t = TEXTS[lang]
+    gift_photo_id = GIFT_PHOTOS.get(lang)
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"setlang_{lang}")
     )
     
-    safe_send(call.message.chat.id, call.message.id, GIFT_PHOTO_URL, t['gift_info'], markup)
+    safe_send(call.message.chat.id, call.message.id, gift_photo_id, t['gift_info'], markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('go_city_'))
 def city_click(call):
