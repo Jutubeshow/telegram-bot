@@ -111,7 +111,7 @@ TEXTS = {
         ),
         'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment!",
         'pay_btn': "💳 Pay ({price})",
-        'how_to_pay_btn': "ℹ️️ How to pay easily"
+        'how_to_pay_btn': "ℹ How to pay easily"
     },
     'rus': {
         'select_city': 'Выберите город',
@@ -136,18 +136,19 @@ TEXTS = {
 }
 
 def safe_send(chat_id, message_id, photo_or_url, text, reply_markup, parse_mode=None):
-    if photo_or_url:
+    if message_id:
         try:
             bot.delete_message(chat_id, message_id)
+        except Exception:
+            pass
+
+    if photo_or_url:
+        try:
             bot.send_photo(chat_id, photo=photo_or_url, caption=text, reply_markup=reply_markup, parse_mode=parse_mode)
             return
         except Exception:
             pass
-            
-    try:
-        bot.delete_message(chat_id, message_id)
-    except Exception:
-        pass
+
     bot.send_message(chat_id, text=text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 @bot.message_handler(commands=['start'])
@@ -158,7 +159,21 @@ def start_command(message):
         types.InlineKeyboardButton("🇬🇧 English", callback_data="setlang_eng"),
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data="setlang_rus")
     )
-    safe_send(message.chat.id, None, START_PHOTO_URL, "🌍 Select language / აირჩიეთ ენა / Выберите язык", markup)
+    
+    # Сразу отправляем стартовую картинку с выбором языка
+    try:
+        bot.send_photo(
+            message.chat.id, 
+            photo=START_PHOTO_URL, 
+            caption="🌍 Select language / აირჩიეთ ენა / Выберите язык", 
+            reply_markup=markup
+        )
+    except Exception:
+        bot.send_message(
+            message.chat.id, 
+            text="🌍 Select language / აირჩიეთ ენა / Выберите язык", 
+            reply_markup=markup
+        )
 
 @bot.callback_query_handler(func=lambda call: call.data == 'nav_main_start')
 def nav_main_start(call):
