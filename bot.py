@@ -29,27 +29,28 @@ try:
 except Exception:
     pass
 
-START_PHOTO_URL = 'AgACAgIAAxkBAAIBUmq_fDsajOlx-YkNyDqYbIF7QFuRAAJPGmsbQBv5SZLWUpZchATZAQADAgADeQADPQQ'
-GIFT_PHOTO_URL = 'AgACAgIAAxkBAAIBR2q_eRPFGQp8JAMifVoN1IFNqjqSAAIzGmsbQBv5SX4QPXKLJwLZAQADAgADeQADPQQ'
+# === БЛОК КАРТИНОК (СБРОШЕНО) ===
+START_PHOTO_URL = ''
+GIFT_PHOTO_URL = ''
 
 # 1️⃣ Картинки для меню выбора языка
 LANG_PHOTOS = {
-    'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
-    'eng': 'AgACAgIAAxkBAAIBr2rA1DjaQcToRo504eUPYDv9jZsfAALhH2sbzA0JSuhWUxcNELOqAQADAgADeQADPQQ',
-    'rus': 'AgACAgIAAxkBAAP1ar9gIm7E-2Ir7MFhW1jXOBmA68YAApwZaxtAG_lJs5Pvj4cqa5YBAAMCAAN5AAM9BA'
+    'geo': '',
+    'eng': '',
+    'rus': ''
 }
 
-# 2️⃣ Картинки для городов (обновили geo и eng на твои новые ID)
+# 2️⃣ Картинки для городов
 CITY_PHOTOS = {
     'amb': {
-        'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
-        'eng': 'AgACAgIAAxkBAAIBr2rA1DjaQcToRo504eUPYDv9jZsfAALhH2sbzA0JSuhWUxcNELOqAQADAgADeQADPQQ',
-        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+        'geo': '',
+        'eng': '',
+        'rus': ''
     },
     'oni': {
-        'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
-        'eng': 'AgACAgIAAxkBAAIBr2rA1DjaQcToRo504eUPYDv9jZsfAALhH2sbzA0JSuhWUxcNELOqAQADAgADeQADPQQ',
-        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+        'geo': '',
+        'eng': '',
+        'rus': ''
     }
 }
 
@@ -151,7 +152,7 @@ def start_command(message):
         types.InlineKeyboardButton("🇬🇧 English", callback_data="setlang_eng"),
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data="setlang_rus")
     )
-    bot.send_photo(message.chat.id, photo=START_PHOTO_URL, caption="🌍 Select language / აირჩიეთ ენა / Выберите язык", reply_markup=markup)
+    safe_send(message.chat.id, None, START_PHOTO_URL, "🌍 Select language / აირჩიეთ ენა / Выберите язык", markup)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'nav_main_start')
 def nav_main_start(call):
