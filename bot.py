@@ -29,35 +29,35 @@ try:
 except Exception:
     pass
 
-# === БЛОК КАРТИНОК ===
-START_PHOTO_URL = 'AgACAgIAAxkBAAIBUmq_fDsajOlx-YkNyDqYbIF7QFuRAAJPGmsbQBv5SZLWUpZchATZAQADAgADeQADPQQ'
+# === БЛОК КАРТИНОК (СВЕЖИЕ FILE_ID) ===
+START_PHOTO_URL = 'AgACAgIAAxkBAAICOWrB2xd60Xd3uUDKRNTd_SAn0lC2AAKlG2sbmdMRSs4THvk1ETmPAQADAgADeQADPQQ'
 
 # 1️⃣ Картинки для меню выбора языка (показываются после выбора языка)
 LANG_PHOTOS = {
-    'geo': 'AgACAgIAAxkBAAIBYGq_n7n4sDrzHEs1HJYxqE5O8T_vAAJUG2sbQBv5SWRdkmdjCO32AQADAgADeQADPQQ',
-    'eng': 'AgACAgIAAxkBAAIBr2rA1DjaQcToRo504eUPYDv9jZsfAALhH2sbzA0JSuhWUxcNELOqAQADAgADeQADPQQ',
-    'rus': 'AgACAgIAAxkBAAP1ar9gIm7E-2Ir7MFhW1jXOBmA68YAApwZaxtAG_lJs5Pvj4cqa5YBAAMCAAN5AAM9BA'
+    'geo': 'AgACAgIAAxkBAAICJ2rB2tWMZ1Dh8Ugt8j18Ls0MWMtXAAKcG2sbmdMRSlEUJFW3Gm-WAQADAgADeQADPQQ',
+    'eng': 'AgACAgIAAxkBAAICKWrB2t3mVOlCPYFAMShfTwaav1LYAAKdG2sbmdMRSvUvAAF_VjrxagEAAwIAA3kAAz0E',
+    'rus': 'AgACAgIAAxkBAAICK2rB2uQvkSF7sRxiNwU4e7NQI9kMAAKeG2sbmdMRSkq5Umfk1PNKAQADAgADeQADPQQ'
 }
 
 # 2️⃣ Картинки для городов (зависят от города и языка)
 CITY_PHOTOS = {
     'amb': {
-        'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
-        'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
-        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+        'geo': 'AgACAgIAAxkBAAICLWrB2vCMzJjCT6sd_VAFsgO8oLWXAAKfG2sbmdMRSkNPd3cIKJWLAQADAgADeQADPQQ',
+        'eng': 'AgACAgIAAxkBAAICL2rB2vd1zPCWH0wSTOmxar35DXQdAAKgG2sbmdMRSiTgwCEuz0YBAQADAgADeQADPQQ',
+        'rus': 'AgACAgIAAxkBAAICMWrB2v6cssMoGlfnmFvGolRq2ZskAAKhG2sbmdMRSvs7nGmFnT5oAQADAgADeQADPQQ'
     },
     'oni': {
-        'geo': 'AgACAgIAAxkBAAIBN2q_eL3G25yipRjnmv59C2o3u1u-AAIvGmsbQBv5SUguXSzghEIAAQEAAwIAA3kAAz0E',
-        'eng': 'AgACAgIAAxkBAAIBIWq_cs2DUgLW7d_nxUJZsz6gT4VVAAMaaxtAG_lJSJZ10cAWqoIBAAMCAAN5AAM9BA',
-        'rus': 'AgACAgIAAxkBAAIBFWq_cdSK_TodBOVK3xt9amHk7O6NAAL7GWsbQBv5SUUx2XJB3nfCAQADAgADeQADPQQ'
+        'geo': 'AgACAgIAAxkBAAICLWrB2vCMzJjCT6sd_VAFsgO8oLWXAAKfG2sbmdMRSkNPd3cIKJWLAQADAgADeQADPQQ',
+        'eng': 'AgACAgIAAxkBAAICL2rB2vd1zPCWH0wSTOmxar35DXQdAAKgG2sbmdMRSiTgwCEuz0YBAQADAgADeQADPQQ',
+        'rus': 'AgACAgIAAxkBAAICMWrB2v6cssMoGlfnmFvGolRq2ZskAAKhG2sbmdMRSvs7nGmFnT5oAQADAgADeQADPQQ'
     }
 }
 
 # 3️⃣ Картинки для разделов «Подарок»
 GIFT_PHOTOS = {
-    'geo': 'AgACAgIAAxkBAAIB4WrBx-Ka1RIDWUHRRb2tDZoiibNrAAJhG2sb_44RSigSkXTC1cvKAQADAgADeQADPQQ',
-    'eng': 'AgACAgIAAxkBAAIB32rBx95PvWSAU4S4dzyXoklrHBQVAAJgG2sb_44RSjndeYhy3nr6AQADAgADeQADPQQ',
-    'rus': 'AgACAgIAAxkBAAIB3WrBx9kSqxhilmFiEGASEvaTnAVRAAJfG2sb_44RSr_9z3haPjsUAQADAgADeQADPQQ'
+    'geo': 'AgACAgIAAxkBAAICM2rB2wSKRzXzJNIaHS7jE-LJX9OLAAKiG2sbmdMRStG2q3jM45_rAQADAgADeQADPQQ',
+    'eng': 'AgACAgIAAxkBAAICNWrB2wpNDFC0IVPPWnKHAAEQI1uiWQACoxtrG5nTEUr9j5e47yc-ngEAAwIAA3kAAz0E',
+    'rus': 'AgACAgIAAxkBAAICN2rB2w6unljidPUE8RJAf1hLJlHqAAKkG2sbmdMRSsZIBeJm0pzVAQADAgADeQADPQQ'
 }
 
 CITIES = {
@@ -111,7 +111,7 @@ TEXTS = {
         ),
         'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment!",
         'pay_btn': "💳 Pay ({price})",
-        'how_to_pay_btn': "ℹ️ How to pay easily"
+        'how_to_pay_btn': "ℹ️️ How to pay easily"
     },
     'rus': {
         'select_city': 'Выберите город',
