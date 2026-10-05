@@ -148,8 +148,8 @@ QTY_PHOTOS = {
             '5':  'AgACAgIAAxkBAAICm2rDDC16xQ-H6Ic018gU6HYRqOfjAAKEGWsbmdMZSleKcGqdayb4AQADAgADeQADPQQ'
         },
         'eng': {
-            '05': 'AgACAgIAAxkBAAICmWrDDCl4G7W3rKUAAfnUvnM9BPJfrgACgxlrG5nTGUok6Aw79wZuNAEAAwIAA3kAAz0E',
-            '1':  'AgACAgIAAxkBAAICmWrDDCl4G7W3rKUAAfnUvnM9BPJfrgACgxlrG5nTGUok6Aw79wZuNAEAAwIAA3kAAz0E',
+            '05': 'AgACAgIAAxkBAAICtWrDESwbuLe-9I67DeS28Cd7A0_aAAKVGWsbmdMZSqJGirY2_hDQAQADAgADeQADPQQ',
+            '1':  'AgACAgIAAxkBAAICs2rDELsf941jsxj_f49r8hJzkJ5rAAKUGWsbmdMZSvIz2td59U7SAQADAgADeQADPQQ',
             '2':  'AgACAgIAAxkBAAICuWrDETxqRYaVm_u2bJL3YoQo5CYwAAKXGWsbmdMZSmpcQeXOfNMPAQADAgADeQADPQQ',
             '5':  'AgACAgIAAxkBAAICt2rDETYB-1JYwLbyy2kZwGCPkeRaAAKWGWsbmdMZSldnHtxpE_wBAQADAgADeQADPQQ'
         },
@@ -207,6 +207,7 @@ TEXTS = {
         'oni_btn': 'ონი',
         'gift_btn': '🎁 საჩუქარი',
         'ref_link_btn': '🔗 ჩემი რეფერალური ბმული',
+        'share_btn': '📤 გაუგზავნე მეგობარს',
         'back_btn': '⬅️ უკან',
         'how_much': 'აირჩიე რაოდენობა!',
         'q05_btn': '0.5 გრ - 16 USDT (40 GEL)',
@@ -218,11 +219,15 @@ TEXTS = {
             "1. იყიდე 10 - ჯერ და მიიღე მე-11 საჩუქრად;\n"
             "2. მოიწვიე 10 მეგობარი, რომლებიც მინიმუმ ერთხელ იყიდიან და ასევე მიიღე 1 გრ საჩუქრად."
         ),
-        'ref_text': (
-            "🔗 **შენი რეფერალური ბმული:**\n`{link}`\n\n"
-            "📊 **სტატისტიკა:**\n"
+        'stats_text': (
+            "📊 **შენი სტატისტიკა:**\n\n"
             "• მოწვეული მეგობრები: **{total}**\n"
             "• მათგან იყიდა: **{bought}/10**"
+        ),
+        'share_msg_text': (
+            "👋 გამარჯობა! გამოიყენე ეს ბოტი შეკვეთისთვის:\n"
+            "`{link}`\n\n"
+            "*(დააჭირე ბმულს დასაკოპირებლად)*"
         ),
         'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას!",
         'pay_btn': "💳 გადახდა ({price})",
@@ -234,6 +239,7 @@ TEXTS = {
         'oni_btn': 'Oni',
         'gift_btn': '🎁 Gift',
         'ref_link_btn': '🔗 My Referral Link',
+        'share_btn': '📤 Share with a friend',
         'back_btn': '⬅️ Back',
         'how_much': 'Select the quantity!',
         'q05_btn': '0.5 g - 16 USDT (40 GEL)',
@@ -245,11 +251,15 @@ TEXTS = {
             "1. Buy 10 times and get the 11th for free as a gift;\n"
             "2. Invite 10 friends who make at least 1 purchase and get 1 g as a gift."
         ),
-        'ref_text': (
-            "🔗 **Your referral link:**\n`{link}`\n\n"
-            "📊 **Statistics:**\n"
+        'stats_text': (
+            "📊 **Your statistics:**\n\n"
             "• Invited friends: **{total}**\n"
             "• Purchased at least once: **{bought}/10**"
+        ),
+        'share_msg_text': (
+            "👋 Hello! Use this bot for ordering:\n"
+            "`{link}`\n\n"
+            "*(Tap on the link to copy it)*"
         ),
         'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment!",
         'pay_btn': "💳 Pay ({price})",
@@ -261,6 +271,7 @@ TEXTS = {
         'oni_btn': 'Они',
         'gift_btn': '🎁 Подарок',
         'ref_link_btn': '🔗 Моя реферальная ссылка',
+        'share_btn': '📤 Поделиться с другом',
         'back_btn': '⬅️ Назад',
         'how_much': 'Выбери количество!',
         'q05_btn': '0.5 г - 16 USDT (40 GEL)',
@@ -272,11 +283,15 @@ TEXTS = {
             "1. Купи 10 раз и получи 11-ый в подарок.\n"
             "2. Пригласи 10 друзей, которые хотя бы 1 раз купят и получи подарок."
         ),
-        'ref_text': (
-            "🔗 **Ваша реферальная ссылка:**\n`{link}`\n\n"
-            "📊 **Статистика:**\n"
+        'stats_text': (
+            "📊 **Ваша статистика:**\n\n"
             "• Приглашено друзей: **{total}**\n"
             "• Совершили покупку: **{bought}/10**"
+        ),
+        'share_msg_text': (
+            "👋 Привет! Воспользуйся этим ботом для заказа:\n"
+            "`{link}`\n\n"
+            "*(Нажми на ссылку выше, чтобы скопировать её)*"
         ),
         'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату!",
         'pay_btn': "💳 Оплата ({price})",
@@ -386,8 +401,8 @@ def get_ref_link(call):
     link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
     total_invited, bought_invited = get_referral_stats(user_id)
     
-    text = t['ref_text'].format(
-        link=link,
+    # 1. Первое сообщение со статистикой
+    stats_msg = t['stats_text'].format(
         total=total_invited,
         bought=bought_invited
     )
@@ -397,7 +412,16 @@ def get_ref_link(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"show_gift_{lang}")
     )
     
-    safe_send(call.message.chat.id, call.message.id, gift_photo_id, text, markup, parse_mode='Markdown')
+    safe_send(user_id, call.message.id, gift_photo_id, stats_msg, markup, parse_mode='Markdown')
+    
+    # 2. Второе сообщение с готовым текстом, скопируемой ссылкой и кнопкой отправки
+    share_text = t['share_msg_text'].format(link=link)
+    share_markup = types.InlineKeyboardMarkup(row_width=1)
+    share_markup.add(
+        types.InlineKeyboardButton(t['share_btn'], switch_inline_query=f"\nПользуйся ботом: {link}")
+    )
+    
+    bot.send_message(user_id, text=share_text, reply_markup=share_markup, parse_mode='Markdown')
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('go_city_'))
 def city_click(call):
