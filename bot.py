@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import sqlite3
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import telebot
 from telebot import types
@@ -17,29 +18,115 @@ def run_health_check_server():
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     server.serve_forever()
 
-# Запускаем сервер в отдельном фоновом потоке
 threading.Thread(target=run_health_check_server, daemon=True).start()
 
 # 2. Токен бота
 TOKEN = os.environ.get("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
+# Получаем username бота для генерации реферальных ссылок
+BOT_USERNAME = None
+try:
+    bot_info = bot.get_me()
+    BOT_USERNAME = bot_info.username
+except Exception as e:
+    print(f"Ошибка получения инфо о боте: {e}")
+
 try:
     bot.remove_webhook()
 except Exception:
     pass
 
-# === БЛОК КАРТИНОК (СВЕЖИЕ FILE_ID) ===
+# === БАЗА ДАННЫХ (SQLite) ===
+def init_db():
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            referrer_id INTEGER,
+            has_bought INTEGER DEFAULT 0
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def register_user(user_id, referrer_id=None):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM users WHERE user_id = ?', (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        if referrer_id and int(referrer_id) == user_id:
+            referrer_id = None
+        cursor.execute('INSERT INTO users (user_id, referrer_id) VALUES (?, ?)', (user_id, referrer_id))
+        conn.commit()
+    conn.close()
+
+def get_referral_stats(user_id):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM users WHERE referrer_id = ?', (user_id,))
+    total_invited = cursor.fetchone()[0]
+    cursor.execute('SELECT COUNT(*) FROM users WHERE referrer_id = ? AND has_bought = 1', (user_id,))
+    bought_invited = cursor.fetchone()[0]
+    conn.close()
+    return total_invited, bought_invited
+
+def confirm_purchase(user_id):
+    """Вызывать эту функцию при успешной оплате заказа!"""
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT referrer_id, has_bought FROM users WHERE user_id = ?', (user_id,))
+    row = cursor.fetchone()
+    
+    if row:
+        referrer_id, has_bought = row
+        # Если это ПЕРВАЯ покупка приглашённого
+        if has_bought == 0:
+            cursor.execute('UPDATE users SET has_bought = 1 WHERE user_id = ?', (user_id,))
+            conn.commit()
+            
+            if referrer_id:
+                cursor.execute('SELECT COUNT(*) FROM users WHERE referrer_id = ? AND has_bought = 1', (referrer_id,))
+                active_count = cursor.fetchone()[0]
+                
+                # При достижении 10 покупателей — ВЫДАЕМ ПОДАРОК АВТОМАТИЧЕСКИ
+                if active_count == 10:
+                    gift_caption = (
+                        "🎉 **ПОЗДРАВЛЯЕМ! Вы выполнили условия акции!**\n\n"
+                        "10 ваших друзей совершили покупку. Ваш подарок — **1 г**!\n\n"
+                        "📍 **Инструкция и место:** смотри на скриншоте выше. "
+                        "Вся подробная информация указана на изображении!"
+                    )
+                    try:
+                        bot.send_photo(
+                            referrer_id, 
+                            photo=GIFT_REWARD_PHOTO, 
+                            caption=gift_caption, 
+                            parse_mode='Markdown'
+                        )
+                    except Exception as e:
+                        print(f"Ошибка при отправке подарка: {e}")
+                        
+    conn.close()
+
+# === БЛОК КАРТИНОК И НАСТРОЕК ===
+
+GIFT_REWARD_PHOTO = 'AgACAgIAAxkBAAICM2rB2wSKRzXzJNIaHS7jE-LJX9OLAAKiG2sbmdMRStG2q3jM45_rAQADAgADeQADPQQ'
+
 START_PHOTO_URL = 'AgACAgIAAxkBAAICOWrB2xd60Xd3uUDKRNTd_SAn0lC2AAKlG2sbmdMRSs4THvk1ETmPAQADAgADeQADPQQ'
 
-# 1️⃣ Картинки для меню выбора языка (показываются после выбора языка)
 LANG_PHOTOS = {
     'geo': 'AgACAgIAAxkBAAICJ2rB2tWMZ1Dh8Ugt8j18Ls0MWMtXAAKcG2sbmdMRSlEUJFW3Gm-WAQADAgADeQADPQQ',
     'eng': 'AgACAgIAAxkBAAICKWrB2t3mVOlCPYFAMShfTwaav1LYAAKdG2sbmdMRSvUvAAF_VjrxagEAAwIAA3kAAz0E',
     'rus': 'AgACAgIAAxkBAAICK2rB2uQvkSF7sRxiNwU4e7NQI9kMAAKeG2sbmdMRSkq5Umfk1PNKAQADAgADeQADPQQ'
 }
 
-# 2️⃣ Картинки для городов (зависят от города и языка)
 CITY_PHOTOS = {
     'amb': {
         'geo': 'AgACAgIAAxkBAAICLWrB2vCMzJjCT6sd_VAFsgO8oLWXAAKfG2sbmdMRSkNPd3cIKJWLAQADAgADeQADPQQ',
@@ -53,7 +140,38 @@ CITY_PHOTOS = {
     }
 }
 
-# 3️⃣ Картинки для разделов «Подарок»
+# === КАРТИНКИ ДЛЯ ТОВАРОВ ПОСЛЕ ВЫБОРА КОЛИЧЕСТВА ===
+QTY_PHOTOS = {
+    'amb': {
+        'geo': {
+            '05': 'AgACAgIAAxkBAAICk2rDDB7h8nGvAhFbrmMJBrhX3BuPAAKAGWsbmdMZSqQPZNug7HOcAQADAgADeQADPQQ',
+            '1': 'AgACAgIAAxkBAAICkWrDDBv7RxeVvEXsV_5GXNtXVR1iAAJ_GWsbmdMZStqVvVLczlcBAQADAgADeQADPQQ',
+            '2': 'AgACAgIAAxkBAAIClWrDDCITlFu3oUS7lVR9ddQ4sDt_AAKBGWsbmdMZSijORq1aKa6IAQADAgADeQADPQQ',
+            '5': 'AgACAgIAAxkBAAICm2rDDC16xQ-H6Ic018gU6HYRqOfjAAKEGWsbmdMZSleKcGqdayb4AQADAgADeQADPQQ'
+        },
+        'eng': {
+            '05': 'AgACAgIAAxkBAAICtWrDESwbuLe-9I67DeS28Cd7A0_aAAKVGWsbmdMZSqJGirY2_hDQAQADAgADeQADPQQ',
+            '1': 'AgACAgIAAxkBAAICs2rDELsf941jsxj_f49r8hJzkJ5rAAKUGWsbmdMZSvIz2td59U7SAQADAgADeQADPQQ',
+            '2': 'AgACAgIAAxkBAAICuWrDETxqRYaVm_u2bJL3YoQo5CYwAAKXGWsbmdMZSmpcQeXOfNMPAQADAgADeQADPQQ',
+            '5': 'AgACAgIAAxkBAAICt2rDETYB-1JYwLbyy2kZwGCPkeRaAAKWGWsbmdMZSldnHtxpE_wBAQADAgADeQADPQQ'
+        }
+    },
+    'oni': {
+        'geo': {
+            '05': 'AgACAgIAAxkBAAICp2rDDFYknSs_RsnfW6VTasm83t6NAAKKGWsbmdMZSg3J6mxsIZMvAQADAgADeQADPQQ',
+            '1': 'AgACAgIAAxkBAAICnWrDDDVKXeZHTcu1WNkE2Kkdl3jsAAKFGWsbmdMZSo3BOeLA75FRAQADAgADeQADPQQ',
+            '2': 'AgACAgIAAxkBAAICqWrDDFuQQ_OAy2la_jltXnASEIRPAAKLGWsbmdMZSpwEr7GF4XmtAQADAgADeQADPQQ',
+            '5': 'AgACAgIAAxkBAAICoWrDDEUew0TzjK_Fy8eVwT5QXjfoAAKHGWsbmdMZSrP1fL5iHcg2AQADAgADeQADPQQ'
+        },
+        'eng': {
+            '05': 'AgACAgIAAxkBAAICo2rDDEmokhYjcer7Nilg6Ez0zVqSAAKIGWsbmdMZSvYNLVOn4_edAQADAgADeQADPQQ',
+            '1': 'AgACAgIAAxkBAAICq2rDDGAgulwLyT-O8zZWrMhoPZDPAAKMGWsbmdMZSpfFKZEcUduDAQADAgADeQADPQQ',
+            '2': 'AgACAgIAAxkBAAICpWrDDE-MK5LJHTMz5WmJc2G9RdQpAAKJGWsbmdMZSoDXMU7imoodAQADAgADeQADPQQ',
+            '5': 'AgACAgIAAxkBAAICr2rDDImnqiwImbEMg1UzKYxSud12AAKOGWsbmdMZSgqX7WilBjbJAQADAgADeQADPQQ'
+        }
+    }
+}
+
 GIFT_PHOTOS = {
     'geo': 'AgACAgIAAxkBAAICM2rB2wSKRzXzJNIaHS7jE-LJX9OLAAKiG2sbmdMRStG2q3jM45_rAQADAgADeQADPQQ',
     'eng': 'AgACAgIAAxkBAAICNWrB2wpNDFC0IVPPWnKHAAEQI1uiWQACoxtrG5nTEUr9j5e47yc-ngEAAwIAA3kAAz0E',
@@ -78,6 +196,7 @@ TEXTS = {
         'ambrolauri_btn': 'ამბროლაური',
         'oni_btn': 'ონი',
         'gift_btn': '🎁 საჩუქარი',
+        'ref_link_btn': '🔗 ჩემი რეფერალური ბმული',
         'back_btn': '⬅️ უკან',
         'how_much': 'აირჩიე რაოდენობა!',
         'q05_btn': '0.5 გრ - 16 USDT (40 GEL)',
@@ -89,15 +208,22 @@ TEXTS = {
             "1. იყიდე 10 - ჯერ და მიიღე მე-11 საჩუქრად;\n"
             "2. მოიწვიე 10 მეგობარი, რომლებიც მინიმუმ ერთხელ იყიდიან და ასევე მიიღე 1 გრ საჩუქრად."
         ),
+        'ref_text': (
+            "🔗 **შენი რეფერალური ბმული:**\n`{link}`\n\n"
+            "📊 **სტატისტიკა:**\n"
+            "• მოწვეული მეგობრები: **{total}**\n"
+            "• მათგან იყიდა: **{bought}/10**"
+        ),
         'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას!",
         'pay_btn': "💳 გადახდა ({price})",
-        'how_to_pay_btn': "ℹ️ როგორ გადაიხდო მარტივად"
+        'how_to_pay_btn': "ℹ️️ როგორ გადაიხდო მარტივად"
     },
     'eng': {
         'select_city': 'Select a location',
         'ambrolauri_btn': 'Ambrolauri',
         'oni_btn': 'Oni',
         'gift_btn': '🎁 Gift',
+        'ref_link_btn': '🔗 My Referral Link',
         'back_btn': '⬅️ Back',
         'how_much': 'Select the quantity!',
         'q05_btn': '0.5 g - 16 USDT (40 GEL)',
@@ -109,6 +235,12 @@ TEXTS = {
             "1. Buy 10 times and get the 11th for free as a gift;\n"
             "2. Invite 10 friends who make at least 1 purchase and get 1 g as a gift."
         ),
+        'ref_text': (
+            "🔗 **Your referral link:**\n`{link}`\n\n"
+            "📊 **Statistics:**\n"
+            "• Invited friends: **{total}**\n"
+            "• Purchased at least once: **{bought}/10**"
+        ),
         'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment!",
         'pay_btn': "💳 Pay ({price})",
         'how_to_pay_btn': "ℹ How to pay easily"
@@ -118,6 +250,7 @@ TEXTS = {
         'ambrolauri_btn': 'Амбролаури',
         'oni_btn': 'Они',
         'gift_btn': '🎁 Подарок',
+        'ref_link_btn': '🔗 Моя реферальная ссылка',
         'back_btn': '⬅️ Назад',
         'how_much': 'Выбери количество!',
         'q05_btn': '0.5 г - 16 USDT (40 GEL)',
@@ -128,6 +261,12 @@ TEXTS = {
             "🎁 Условия подарка:\n\n"
             "1. Купи 10 раз и получи 11-ый в подарок.\n"
             "2. Пригласи 10 друзей, которые хотя бы 1 раз купят и получи подарок."
+        ),
+        'ref_text': (
+            "🔗 **Ваша реферальная ссылка:**\n`{link}`\n\n"
+            "📊 **Статистика:**\n"
+            "• Приглашено друзей: **{total}**\n"
+            "• Совершили покупку: **{bought}/10**"
         ),
         'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату!",
         'pay_btn': "💳 Оплата ({price})",
@@ -153,6 +292,15 @@ def safe_send(chat_id, message_id, photo_or_url, text, reply_markup, parse_mode=
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
+    user_id = message.chat.id
+    
+    args = message.text.split()
+    referrer_id = None
+    if len(args) > 1 and args[1].isdigit():
+        referrer_id = int(args[1])
+        
+    register_user(user_id, referrer_id)
+
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
         types.InlineKeyboardButton("🇬🇪 ქართული", callback_data="setlang_geo"),
@@ -160,17 +308,16 @@ def start_command(message):
         types.InlineKeyboardButton("🇷🇺 Русский", callback_data="setlang_rus")
     )
     
-    # Сразу отправляем стартовую картинку с выбором языка
     try:
         bot.send_photo(
-            message.chat.id, 
+            user_id, 
             photo=START_PHOTO_URL, 
             caption="🌍 Select language / აირჩიეთ ენა / Выберите язык", 
             reply_markup=markup
         )
     except Exception:
         bot.send_message(
-            message.chat.id, 
+            user_id, 
             text="🌍 Select language / აირჩიეთ ენა / Выберите язык", 
             reply_markup=markup
         )
@@ -212,10 +359,35 @@ def show_gift_info(call):
     
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
+        types.InlineKeyboardButton(t['ref_link_btn'], callback_data=f"get_ref_{lang}"),
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"setlang_{lang}")
     )
     
     safe_send(call.message.chat.id, call.message.id, gift_photo_id, t['gift_info'], markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('get_ref_'))
+def get_ref_link(call):
+    bot.answer_callback_query(call.id)
+    lang = call.data.split('_')[2]
+    t = TEXTS[lang]
+    user_id = call.message.chat.id
+    gift_photo_id = GIFT_PHOTOS.get(lang)
+    
+    link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
+    total_invited, bought_invited = get_referral_stats(user_id)
+    
+    text = t['ref_text'].format(
+        link=link,
+        total=total_invited,
+        bought=bought_invited
+    )
+    
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton(t['back_btn'], callback_data=f"show_gift_{lang}")
+    )
+    
+    safe_send(call.message.chat.id, call.message.id, gift_photo_id, text, markup, parse_mode='Markdown')
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('go_city_'))
 def city_click(call):
@@ -238,7 +410,6 @@ def city_click(call):
     
     safe_send(call.message.chat.id, call.message.id, photo_file_id, t['how_much'], markup)
 
-# Выбор количества товара
 @bot.callback_query_handler(func=lambda call: call.data.startswith('qty_'))
 def qty_click(call):
     bot.answer_callback_query(call.id)
@@ -266,15 +437,18 @@ def qty_click(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"go_city_{city_key}_{lang}")
     )
     
-    photo_file_id = CITY_PHOTOS.get(city_key, {}).get(lang)
+    # Берем индивидуальную картинку для выбранной фасовки и города.
+    # Если для какого-то языка картинки нет, по умолчанию берется городская фото.
+    photo_file_id = QTY_PHOTOS.get(city_key, {}).get(lang, {}).get(qty_key)
+    if not photo_file_id:
+        photo_file_id = CITY_PHOTOS.get(city_key, {}).get(lang)
+
     safe_send(call.message.chat.id, call.message.id, photo_file_id, text, markup, parse_mode='Markdown')
 
-# Заглушка для "Как легко оплатить"
 @bot.callback_query_handler(func=lambda call: call.data.startswith('howpay_'))
 def how_pay_click(call):
     bot.answer_callback_query(call.id, "Инструкция появится позже", show_alert=True)
 
-# Заглушка для "Оплата"
 @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
 def pay_click(call):
     bot.answer_callback_query(call.id, "Переход к оплате появится позже", show_alert=True)
@@ -291,7 +465,6 @@ def handle_document(message):
     file_id = message.document.file_id
     bot.send_message(message.chat.id, f"ID файла:\n\n{file_id}")
 
-# Авто-перезапуск бота при сбоях сети
 while True:
     try:
         bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
