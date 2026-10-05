@@ -86,7 +86,6 @@ def confirm_purchase(user_id):
     
     if row:
         referrer_id, has_bought = row
-        # Если это ПЕРВАЯ покупка приглашённого
         if has_bought == 0:
             cursor.execute('UPDATE users SET has_bought = 1 WHERE user_id = ?', (user_id,))
             conn.commit()
@@ -95,7 +94,6 @@ def confirm_purchase(user_id):
                 cursor.execute('SELECT COUNT(*) FROM users WHERE referrer_id = ? AND has_bought = 1', (referrer_id,))
                 active_count = cursor.fetchone()[0]
                 
-                # При достижении 10 покупателей — ВЫДАЕМ ПОДАРОК АВТОМАТИЧЕСКИ
                 if active_count == 10:
                     gift_caption = (
                         "🎉 **ПОЗДРАВЛЯЕМ! Вы выполнили условия акции!**\n\n"
@@ -140,34 +138,46 @@ CITY_PHOTOS = {
     }
 }
 
-# === КАРТИНКИ ДЛЯ ТОВАРОВ ПОСЛЕ ВЫБОРА КОЛИЧЕСТВА ===
+# === ТОВАРНЫЕ КАРТИНКИ ПО ВЕСАМ, ГОРОДАМ И ЯЗЫКАМ ===
 QTY_PHOTOS = {
     'amb': {
         'geo': {
             '05': 'AgACAgIAAxkBAAICk2rDDB7h8nGvAhFbrmMJBrhX3BuPAAKAGWsbmdMZSqQPZNug7HOcAQADAgADeQADPQQ',
-            '1': 'AgACAgIAAxkBAAICkWrDDBv7RxeVvEXsV_5GXNtXVR1iAAJ_GWsbmdMZStqVvVLczlcBAQADAgADeQADPQQ',
-            '2': 'AgACAgIAAxkBAAIClWrDDCITlFu3oUS7lVR9ddQ4sDt_AAKBGWsbmdMZSijORq1aKa6IAQADAgADeQADPQQ',
-            '5': 'AgACAgIAAxkBAAICm2rDDC16xQ-H6Ic018gU6HYRqOfjAAKEGWsbmdMZSleKcGqdayb4AQADAgADeQADPQQ'
+            '1':  'AgACAgIAAxkBAAICkWrDDBv7RxeVvEXsV_5GXNtXVR1iAAJ_GWsbmdMZStqVvVLczlcBAQADAgADeQADPQQ',
+            '2':  'AgACAgIAAxkBAAICl2rDDCW6UUMscYLfDwPS2AHP6BJrAAKCGWsbmdMZSgpcyO5OhsgNAQADAgADeQADPQQ',
+            '5':  'AgACAgIAAxkBAAICm2rDDC16xQ-H6Ic018gU6HYRqOfjAAKEGWsbmdMZSleKcGqdayb4AQADAgADeQADPQQ'
         },
         'eng': {
-            '05': 'AgACAgIAAxkBAAICtWrDESwbuLe-9I67DeS28Cd7A0_aAAKVGWsbmdMZSqJGirY2_hDQAQADAgADeQADPQQ',
-            '1': 'AgACAgIAAxkBAAICs2rDELsf941jsxj_f49r8hJzkJ5rAAKUGWsbmdMZSvIz2td59U7SAQADAgADeQADPQQ',
-            '2': 'AgACAgIAAxkBAAICuWrDETxqRYaVm_u2bJL3YoQo5CYwAAKXGWsbmdMZSmpcQeXOfNMPAQADAgADeQADPQQ',
-            '5': 'AgACAgIAAxkBAAICt2rDETYB-1JYwLbyy2kZwGCPkeRaAAKWGWsbmdMZSldnHtxpE_wBAQADAgADeQADPQQ'
+            '05': 'AgACAgIAAxkBAAICmWrDDCl4G7W3rKUAAfnUvnM9BPJfrgACgxlrG5nTGUok6Aw79wZuNAEAAwIAA3kAAz0E',
+            '1':  'AgACAgIAAxkBAAICmWrDDCl4G7W3rKUAAfnUvnM9BPJfrgACgxlrG5nTGUok6Aw79wZuNAEAAwIAA3kAAz0E',
+            '2':  'AgACAgIAAxkBAAICuWrDETxqRYaVm_u2bJL3YoQo5CYwAAKXGWsbmdMZSmpcQeXOfNMPAQADAgADeQADPQQ',
+            '5':  'AgACAgIAAxkBAAICt2rDETYB-1JYwLbyy2kZwGCPkeRaAAKWGWsbmdMZSldnHtxpE_wBAQADAgADeQADPQQ'
+        },
+        'rus': {
+            '05': 'AgACAgIAAxkBAAIC2mrDK0ohum70jZANz3bn_5m6f9pDAALKGWsbmdMZShyjpfzGBjJ2AQADAgADeQADPQQ',
+            '1':  'AgACAgIAAxkBAAIC3GrDK06sFZyFSCvrn-aAiX_FAAF7vwACyxlrG5nTGUqNYvAhcaPtQQEAAwIAA3kAAz0E',
+            '2':  'AgACAgIAAxkBAAIC3mrDK1Je_CjiecdhSqt5j39UFByPAALMGWsbmdMZSs-Ef_AOJqYBAQADAgADeQADPQQ',
+            '5':  'AgACAgIAAxkBAAIC4GrDK1c-s9XTmnKPFmb_boRFa3geAALNGWsbmdMZSrwaLaowXZFdAQADAgADeQADPQQ'
         }
     },
     'oni': {
         'geo': {
-            '05': 'AgACAgIAAxkBAAICp2rDDFYknSs_RsnfW6VTasm83t6NAAKKGWsbmdMZSg3J6mxsIZMvAQADAgADeQADPQQ',
-            '1': 'AgACAgIAAxkBAAICnWrDDDVKXeZHTcu1WNkE2Kkdl3jsAAKFGWsbmdMZSo3BOeLA75FRAQADAgADeQADPQQ',
-            '2': 'AgACAgIAAxkBAAICqWrDDFuQQ_OAy2la_jltXnASEIRPAAKLGWsbmdMZSpwEr7GF4XmtAQADAgADeQADPQQ',
-            '5': 'AgACAgIAAxkBAAICoWrDDEUew0TzjK_Fy8eVwT5QXjfoAAKHGWsbmdMZSrP1fL5iHcg2AQADAgADeQADPQQ'
+            '05': 'AgACAgIAAxkBAAICrWrDDIPkjTdpho3FG3U1apkQYdsjAAKNGWsbmdMZStKmSgR3CWXYAQADAgADeQADPQQ',
+            '1':  'AgACAgIAAxkBAAICn2rDDEC6rFKK2cFuJbjwLpf5ONeUAAKGGWsbmdMZSp4jxX3Jd_LNAQADAgADeQADPQQ',
+            '2':  'AgACAgIAAxkBAAIClWrDDCITlFu3oUS7lVR9ddQ4sDt_AAKBGWsbmdMZSijORq1aKa6IAQADAgADeQADPQQ',
+            '5':  'AgACAgIAAxkBAAICmWrDDCl4G7W3rKUAAfnUvnM9BPJfrgACgxlrG5nTGUok6Aw79wZuNAEAAwIAA3kAAz0E'
         },
         'eng': {
-            '05': 'AgACAgIAAxkBAAICo2rDDEmokhYjcer7Nilg6Ez0zVqSAAKIGWsbmdMZSvYNLVOn4_edAQADAgADeQADPQQ',
-            '1': 'AgACAgIAAxkBAAICq2rDDGAgulwLyT-O8zZWrMhoPZDPAAKMGWsbmdMZSpfFKZEcUduDAQADAgADeQADPQQ',
-            '2': 'AgACAgIAAxkBAAICpWrDDE-MK5LJHTMz5WmJc2G9RdQpAAKJGWsbmdMZSoDXMU7imoodAQADAgADeQADPQQ',
-            '5': 'AgACAgIAAxkBAAICr2rDDImnqiwImbEMg1UzKYxSud12AAKOGWsbmdMZSgqX7WilBjbJAQADAgADeQADPQQ'
+            '05': 'AgACAgIAAxkBAAICzGrDGkg9zA6YdsBX7LJ3JP_VnLNaAAKlGWsbmdMZSra2wdE2vkiGAQADAgADeQADPQQ',
+            '1':  'AgACAgIAAxkBAAICq2rDDGAgulwLyT-O8zZWrMhoPZDPAAKMGWsbmdMZSpfFKZEcUduDAQADAgADeQADPQQ',
+            '2':  'AgACAgIAAxkBAAICpWrDDE-MK5LJHTMz5WmJc2G9RdQpAAKJGWsbmdMZSoDXMU7imoodAQADAgADeQADPQQ',
+            '5':  'AgACAgIAAxkBAAICr2rDDImnqiwImbEMg1UzKYxSud12AAKOGWsbmdMZSgqX7WilBjbJAQADAgADeQADPQQ'
+        },
+        'rus': {
+            '05': 'AgACAgIAAxkBAAICp2rDDFYknSs_RsnfW6VTasm83t6NAAKKGWsbmdMZSg3J6mxsIZMvAQADAgADeQADPQQ',
+            '1':  'AgACAgIAAxkBAAICnWrDDDVKXeZHTcu1WNkE2Kkdl3jsAAKFGWsbmdMZSo3BOeLA75FRAQADAgADeQADPQQ',
+            '2':  'AgACAgIAAxkBAAICqWrDDFuQQ_OAy2la_jltXnASEIRPAAKLGWsbmdMZSpwEr7GF4XmtAQADAgADeQADPQQ',
+            '5':  'AgACAgIAAxkBAAICoWrDDEUew0TzjK_Fy8eVwT5QXjfoAAKHGWsbmdMZSrP1fL5iHcg2AQADAgADeQADPQQ'
         }
     }
 }
@@ -216,7 +226,7 @@ TEXTS = {
         ),
         'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას!",
         'pay_btn': "💳 გადახდა ({price})",
-        'how_to_pay_btn': "ℹ️️ როგორ გადაიხდო მარტივად"
+        'how_to_pay_btn': "ℹ როგორ გადაიხდო მარტივად"
     },
     'eng': {
         'select_city': 'Select a location',
@@ -437,8 +447,7 @@ def qty_click(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"go_city_{city_key}_{lang}")
     )
     
-    # Берем индивидуальную картинку для выбранной фасовки и города.
-    # Если для какого-то языка картинки нет, по умолчанию берется городская фото.
+    # Берем точную картинку по [город][язык][фасовка]
     photo_file_id = QTY_PHOTOS.get(city_key, {}).get(lang, {}).get(qty_key)
     if not photo_file_id:
         photo_file_id = CITY_PHOTOS.get(city_key, {}).get(lang)
