@@ -229,7 +229,7 @@ TEXTS = {
             "`{link}`\n\n"
             "*(დააჭირე ბმულს დასაკოპირებლად)*"
         ),
-        'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას!",
+        'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას! გირჩევ 5 ლარით მეტი ჩარიცხო, რადგანაც კომისიას მიაქვს, ჩვენი ბრალი არაა.",
         'pay_btn': "💳 გადახდა ({price})",
         'how_to_pay_btn': "ℹ როგორ გადაიხდო მარტივად"
     },
@@ -261,7 +261,7 @@ TEXTS = {
             "`{link}`\n\n"
             "*(Tap on the link to copy it)*"
         ),
-        'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment!",
+        'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment! I recommend topping up by an extra 5 lari, otherwise the commission eats into the amount—that’s not our fault.",
         'pay_btn': "💳 Pay ({price})",
         'how_to_pay_btn': "ℹ How to pay easily"
     },
@@ -293,7 +293,7 @@ TEXTS = {
             "`{link}`\n\n"
             "*(Нажми на ссылку выше, чтобы скопировать её)*"
         ),
-        'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату!",
+        'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату! Советую пополнить на 5 лари больше, а то комиссия забирает, это не наша вина.",
         'pay_btn': "💳 Оплата ({price})",
         'how_to_pay_btn': "ℹ Как легко оплатить"
     }
