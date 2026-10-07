@@ -195,26 +195,32 @@ def confirm_purchase(user_id):
 
 def crypto_create_invoice(amount, asset="USDT"):
     if not CRYPTO_PAY_TOKEN:
-        print("ОШИБКА: CRYPTO_PAY_TOKEN не настроен в переменной окружения!")
+        print("ОШИБКА: CRYPTO_PAY_TOKEN не задан в Environment Variables!")
         return None
         
     url = "https://pay.crypt.bot/api/createInvoice"
     headers = {"Crypto-Pay-API-Token": CRYPTO_PAY_TOKEN.strip()}
+    
+    # Форматирование суммы: убираем лишние нули (например 16.0 -> "16")
+    formatted_amount = str(int(amount)) if amount == int(amount) else str(amount)
+    
     payload = {
+        "currency_type": "crypto",
         "asset": asset,
-        "amount": "{:.2f}".format(amount),
+        "amount": formatted_amount,
         "description": "Top-up balance in bot",
         "paid_btn_name": "openBot"
     }
+    
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=10)
         res = response.json()
         if res.get("ok"):
             return res["result"]
         else:
-            print(f"Ошибка от CryptoBot API: {res}")
+            print(f"❌ Ошибка от CryptoBot API (createInvoice): {res}")
     except Exception as e:
-        print(f"Исключение при запросе к CryptoBot API (createInvoice): {e}")
+        print(f"❌ Исключение при запросе к CryptoBot API: {e}")
     return None
 
 def crypto_get_invoice(invoice_id):
@@ -230,9 +236,9 @@ def crypto_get_invoice(invoice_id):
         if res.get("ok") and len(res["result"]["items"]) > 0:
             return res["result"]["items"][0]
         else:
-            print(f"Ошибка от CryptoBot API (getInvoices): {res}")
+            print(f"❌ Ошибка от CryptoBot API (getInvoices): {res}")
     except Exception as e:
-        print(f"Исключение при запросе к CryptoBot API (getInvoices): {e}")
+        print(f"❌ Исключение при запросе к CryptoBot API (getInvoices): {e}")
     return None
 
 def generate_qr_photo(data_string):
@@ -250,7 +256,6 @@ def generate_qr_photo(data_string):
 # === БЛОК КАРТИНОК И НАСТРОЕК ===
 
 GIFT_REWARD_PHOTO = 'AgACAgIAAxkBAAICM2rB2wSKRzXzJNIaHS7jE-LJX9OLAAKiG2sbmdMRStG2q3jM45_rAQADAgADeQADPQQ'
-
 START_PHOTO_URL = 'AgACAgIAAxkBAAICOWrB2xd60Xd3uUDKRNTd_SAn0lC2AAKlG2sbmdMRSs4THvk1ETmPAQADAgADeQADPQQ'
 
 LANG_PHOTOS = {
@@ -651,7 +656,7 @@ def pay_click(call):
     required_usdt = QUANTITIES[qty_key]['usdt']
     current_balance = get_user_balance(user_id)
     
-    # 1. Если на балансе хватает денег — сразу покупаем!
+    # 1. Если на балансе хватает денег
     if current_balance >= required_usdt:
         deduct_user_balance(user_id, required_usdt)
         confirm_purchase(user_id)
@@ -661,7 +666,7 @@ def pay_click(call):
         bot.send_message(user_id, msg, parse_mode='Markdown')
         return
 
-    # 2. Если баланса не хватает — выставляем счет на недостающую сумму
+    # 2. Если баланса не хватает — выставляем счет
     need_to_pay = round(required_usdt - current_balance, 2)
     
     invoice = crypto_create_invoice(need_to_pay)
@@ -670,10 +675,12 @@ def pay_click(call):
         return
 
     invoice_id = invoice['invoice_id']
-    pay_url = invoice['bot_invoice_url']
+    # Корректное получение ссылки из Crypto Bot API
+    pay_url = invoice.get('pay_url') or invoice.get('bot_invoice_url') or invoice.get('mini_app_invoice_url')
+    
     save_invoice(invoice_id, user_id, need_to_pay)
 
-    # Генерация QR-кода на лету в памяти
+    # Генерация QR-кода
     qr_bio = generate_qr_photo(pay_url)
 
     caption = (
@@ -716,7 +723,6 @@ def check_payment_click(call):
         
         bot.answer_callback_query(call.id, "✅ Оплата получена! Средства зачислены на ваш баланс.", show_alert=True)
         
-        # Сразу пытаемся совершить покупку
         required_usdt = QUANTITIES[qty_key]['usdt']
         if deduct_user_balance(user_id, required_usdt):
             confirm_purchase(user_id)
