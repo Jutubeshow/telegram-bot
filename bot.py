@@ -1,7 +1,10 @@
 import os
 import time
+import io
 import threading
 import sqlite3
+import requests
+import qrcode
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import telebot
 from telebot import types
@@ -20,11 +23,12 @@ def run_health_check_server():
 
 threading.Thread(target=run_health_check_server, daemon=True).start()
 
-# 2. Токен бота
+# 2. Токены бота и Crypto Pay
 TOKEN = os.environ.get("BOT_TOKEN")
+CRYPTO_PAY_TOKEN = os.environ.get("CRYPTO_PAY_TOKEN")
+
 bot = telebot.TeleBot(TOKEN)
 
-# Получаем username бота для генерации реферальных ссылок
 BOT_USERNAME = None
 try:
     bot_info = bot.get_me()
@@ -41,13 +45,31 @@ except Exception:
 def init_db():
     conn = sqlite3.connect('bot_database.db')
     cursor = conn.cursor()
+    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
             referrer_id INTEGER,
-            has_bought INTEGER DEFAULT 0
+            has_bought INTEGER DEFAULT 0,
+            balance REAL DEFAULT 0.0
         )
     ''')
+    
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN balance REAL DEFAULT 0.0')
+    except Exception:
+        pass
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS invoices (
+            invoice_id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            amount REAL,
+            status TEXT DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -62,9 +84,62 @@ def register_user(user_id, referrer_id=None):
     if not user:
         if referrer_id and int(referrer_id) == user_id:
             referrer_id = None
-        cursor.execute('INSERT INTO users (user_id, referrer_id) VALUES (?, ?)', (user_id, referrer_id))
+        cursor.execute('INSERT INTO users (user_id, referrer_id, balance) VALUES (?, ?, 0.0)', (user_id, referrer_id))
         conn.commit()
     conn.close()
+
+def get_user_balance(user_id):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT balance FROM users WHERE user_id = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row and row[0] is not None else 0.0
+
+def add_user_balance(user_id, amount):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET balance = balance + ? WHERE user_id = ?', (amount, user_id))
+    conn.commit()
+    conn.close()
+
+def deduct_user_balance(user_id, amount):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT balance FROM users WHERE user_id = ?', (user_id,))
+    row = cursor.fetchone()
+    
+    if row and row[0] >= amount:
+        cursor.execute('UPDATE users SET balance = balance - ? WHERE user_id = ?', (amount, user_id))
+        conn.commit()
+        conn.close()
+        return True
+    
+    conn.close()
+    return False
+
+def save_invoice(invoice_id, user_id, amount):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR REPLACE INTO invoices (invoice_id, user_id, amount, status) VALUES (?, ?, ?, "active")', 
+                   (invoice_id, user_id, amount))
+    conn.commit()
+    conn.close()
+
+def set_invoice_paid(invoice_id):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE invoices SET status = "paid" WHERE invoice_id = ?', (invoice_id,))
+    conn.commit()
+    conn.close()
+
+def get_invoice_status(invoice_id):
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT status FROM invoices WHERE invoice_id = ?', (invoice_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
 
 def get_referral_stats(user_id):
     conn = sqlite3.connect('bot_database.db')
@@ -77,7 +152,6 @@ def get_referral_stats(user_id):
     return total_invited, bought_invited
 
 def confirm_purchase(user_id):
-    """Вызывать эту функцию при успешной оплате заказа!"""
     conn = sqlite3.connect('bot_database.db')
     cursor = conn.cursor()
     
@@ -113,6 +187,56 @@ def confirm_purchase(user_id):
                         
     conn.close()
 
+# === ИНТЕГРАЦИЯ CRYPTO BOT API & QR ===
+
+def crypto_create_invoice(amount, asset="USDT"):
+    if not CRYPTO_PAY_TOKEN:
+        print("ОШИБКА: CRYPTO_PAY_TOKEN не настроен!")
+        return None
+        
+    url = "https://pay.crypt.bot/api/createInvoice"
+    headers = {"Crypto-Pay-API-Token": CRYPTO_PAY_TOKEN}
+    payload = {
+        "asset": asset,
+        "amount": str(amount),
+        "description": "Top-up balance in bot",
+        "paid_btn_name": "openBot"
+    }
+    try:
+        res = requests.post(url, json=payload, headers=headers, timeout=10).json()
+        if res.get("ok"):
+            return res["result"]
+    except Exception as e:
+        print(f"Ошибка CryptoBot API (createInvoice): {e}")
+    return None
+
+def crypto_get_invoice(invoice_id):
+    if not CRYPTO_PAY_TOKEN:
+        return None
+        
+    url = "https://pay.crypt.bot/api/getInvoices"
+    headers = {"Crypto-Pay-API-Token": CRYPTO_PAY_TOKEN}
+    payload = {"invoice_ids": invoice_id}
+    try:
+        res = requests.post(url, json=payload, headers=headers, timeout=10).json()
+        if res.get("ok") and len(res["result"]["items"]) > 0:
+            return res["result"]["items"][0]
+    except Exception as e:
+        print(f"Ошибка CryptoBot API (getInvoices): {e}")
+    return None
+
+def generate_qr_photo(data_string):
+    qr = qrcode.QRCode(box_size=10, border=2)
+    qr.add_data(data_string)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    bio = io.BytesIO()
+    bio.name = 'qr.png'
+    img.save(bio, 'PNG')
+    bio.seek(0)
+    return bio
+
 # === БЛОК КАРТИНОК И НАСТРОЕК ===
 
 GIFT_REWARD_PHOTO = 'AgACAgIAAxkBAAICM2rB2wSKRzXzJNIaHS7jE-LJX9OLAAKiG2sbmdMRStG2q3jM45_rAQADAgADeQADPQQ'
@@ -138,7 +262,6 @@ CITY_PHOTOS = {
     }
 }
 
-# === ТОВАРНЫЕ КАРТИНКИ ПО ВЕСАМ, ГОРОДАМ И ЯЗЫКАМ ===
 QTY_PHOTOS = {
     'amb': {
         'geo': {
@@ -194,10 +317,10 @@ CITIES = {
 }
 
 QUANTITIES = {
-    '05': {'geo': '0.5 გრ', 'eng': '0.5 g', 'rus': '0.5 г', 'price': '16 USDT (40 GEL)'},
-    '1': {'geo': '1 გრ', 'eng': '1 g', 'rus': '1 г', 'price': '31 USDT (80 GEL)'},
-    '2': {'geo': '2 გრ', 'eng': '2 g', 'rus': '2 г', 'price': '58 USDT (150 GEL)'},
-    '5': {'geo': '5 გრ', 'eng': '5 g', 'rus': '5 г', 'price': '135 USDT (350 GEL)'}
+    '05': {'geo': '0.5 გრ', 'eng': '0.5 g', 'rus': '0.5 г', 'price': '16 USDT (40 GEL)', 'usdt': 16.0},
+    '1': {'geo': '1 გრ', 'eng': '1 g', 'rus': '1 г', 'price': '31 USDT (80 GEL)', 'usdt': 31.0},
+    '2': {'geo': '2 გრ', 'eng': '2 g', 'rus': '2 г', 'price': '58 USDT (150 GEL)', 'usdt': 58.0},
+    '5': {'geo': '5 გრ', 'eng': '5 g', 'rus': '5 г', 'price': '135 USDT (350 GEL)', 'usdt': 135.0}
 }
 
 TEXTS = {
@@ -297,6 +420,30 @@ TEXTS = {
         'pay_btn': "💳 Оплата ({price})",
         'how_to_pay_btn': "ℹ Как легко оплатить"
     }
+}
+
+INSTRUCTIONS = {
+    'geo': (
+        "ℹ️ **როგორ გადავიხადოთ Crypto Bot-ით:**\n\n"
+        "1. დააჭირეთ ღილაკს **«💳 გადახდა (Crypto Bot)»** ქვემოთ.\n"
+        "2. გახსნილ ჩატში დააჭირეთ **Оплатить**.\n"
+        "3. თუ ანგარიშზე არ გაქვთ USDT, აირჩიეთ **Пополнить** და გადაიხადეთ ნებისმიერი ბარათით ან крипто-საფულით (Trust Wallet / Binance / TON).\n"
+        "4. გადახდის შემდეგ დაბრუნდით ბოტში და დააჭირეთ **«🔄 შეამოწმე გადახდა»**."
+    ),
+    'eng': (
+        "ℹ️ **How to pay via Crypto Bot:**\n\n"
+        "1. Click the **«💳 Pay (Crypto Bot)»** button below.\n"
+        "2. In the opened chat, click **Pay**.\n"
+        "3. If you don't have USDT in your balance, select **Top Up** and pay using any card or wallet (Trust Wallet / Binance / TON).\n"
+        "4. After payment, return to this bot and click **«🔄 Check Payment»**."
+    ),
+    'rus': (
+        "ℹ️ **Как легко оплатить через Crypto Bot:**\n\n"
+        "1. Нажмите кнопку **«💳 Оплатить (Crypto Bot)»** ниже.\n"
+        "2. В открывшемся чате нажмите **Оплатить**.\n"
+        "3. Если у вас нет USDT на балансе, выберите **Пополнить** и оплатите с любой карты или внешнего кошелька (Trust Wallet / Binance / TON / QR-код).\n"
+        "4. После оплаты вернитесь в этого бота и нажмите кнопку **«🔄 Проверить оплату»**."
+    )
 }
 
 def safe_send(chat_id, message_id, photo_or_url, text, reply_markup, parse_mode=None):
@@ -401,7 +548,6 @@ def get_ref_link(call):
     link = f"https://t.me/{BOT_USERNAME}?start={user_id}"
     total_invited, bought_invited = get_referral_stats(user_id)
     
-    # 1. Первое сообщение со статистикой
     stats_msg = t['stats_text'].format(
         total=total_invited,
         bought=bought_invited
@@ -414,7 +560,6 @@ def get_ref_link(call):
     
     safe_send(user_id, call.message.id, gift_photo_id, stats_msg, markup, parse_mode='Markdown')
     
-    # 2. Второе сообщение с готовым текстом, скопируемой ссылкой и кнопкой отправки
     share_text = t['share_msg_text'].format(link=link)
     share_markup = types.InlineKeyboardMarkup(row_width=1)
     share_markup.add(
@@ -471,7 +616,6 @@ def qty_click(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"go_city_{city_key}_{lang}")
     )
     
-    # Берем точную картинку по [город][язык][фасовка]
     photo_file_id = QTY_PHOTOS.get(city_key, {}).get(lang, {}).get(qty_key)
     if not photo_file_id:
         photo_file_id = CITY_PHOTOS.get(city_key, {}).get(lang)
@@ -480,11 +624,100 @@ def qty_click(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('howpay_'))
 def how_pay_click(call):
-    bot.answer_callback_query(call.id, "Инструкция появится позже", show_alert=True)
+    bot.answer_callback_query(call.id)
+    lang = call.data.split('_')[1]
+    text = INSTRUCTIONS.get(lang, INSTRUCTIONS['rus'])
+    bot.send_message(call.message.chat.id, text, parse_mode='Markdown')
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
 def pay_click(call):
-    bot.answer_callback_query(call.id, "Переход к оплате появится позже", show_alert=True)
+    bot.answer_callback_query(call.id)
+    parts = call.data.split('_')
+    qty_key = parts[1]
+    city_key = parts[2]
+    lang = parts[3]
+    user_id = call.message.chat.id
+    
+    required_usdt = QUANTITIES[qty_key]['usdt']
+    current_balance = get_user_balance(user_id)
+    
+    # 1. Если на балансе хватает денег — сразу покупаем!
+    if current_balance >= required_usdt:
+        deduct_user_balance(user_id, required_usdt)
+        confirm_purchase(user_id)
+        rem_balance = get_user_balance(user_id)
+        
+        msg = f"✅ **Оплата прошла успешно с вашего баланса!**\n\nСписано: `{required_usdt} USDT`\nОстаток на балансе: `{rem_balance} USDT`"
+        bot.send_message(user_id, msg, parse_mode='Markdown')
+        return
+
+    # 2. Если баланса не хватает — выставляем счет на недостающую сумму
+    need_to_pay = round(required_usdt - current_balance, 2)
+    
+    invoice = crypto_create_invoice(need_to_pay)
+    if not invoice:
+        bot.send_message(user_id, "❌ Ошибка создания чека. Попробуйте позже.")
+        return
+
+    invoice_id = invoice['invoice_id']
+    pay_url = invoice['bot_invoice_url']
+    save_invoice(invoice_id, user_id, need_to_pay)
+
+    # Генерация QR-кода на лету в памяти
+    qr_bio = generate_qr_photo(pay_url)
+
+    caption = (
+        f"💳 **ОПЛАТА ЗАКАЗА (USDT)**\n\n"
+        f"📌 Ваш текущий баланс: `{current_balance} USDT`\n"
+        f"📌 К оплате: `{need_to_pay} USDT`\n\n"
+        f"📲 **Инструкция:**\n"
+        f"1. Отсканируйте QR-код выше ИЛИ нажмите кнопку ниже для оплаты через Crypto Bot.\n"
+        f"2. После перевода нажмите кнопку **«🔄 Проверить оплату»**.\n\n"
+        f"💡 *Все «лишние» зачисленные средства сохранятся на вашем балансе для следующих покупок!*"
+    )
+
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton("💳 Оплатить (Crypto Bot)", url=pay_url),
+        types.InlineKeyboardButton("🔄 Проверить оплату", callback_data=f"check_{invoice_id}_{qty_key}_{lang}"),
+        types.InlineKeyboardButton(TEXTS[lang]['back_btn'], callback_data=f"qty_{qty_key}_{city_key}_{lang}")
+    )
+
+    bot.send_photo(user_id, photo=qr_bio, caption=caption, reply_markup=markup, parse_mode='Markdown')
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('check_'))
+def check_payment_click(call):
+    parts = call.data.split('_')
+    invoice_id = int(parts[1])
+    qty_key = parts[2]
+    lang = parts[3]
+    user_id = call.message.chat.id
+
+    db_status = get_invoice_status(invoice_id)
+    if db_status == 'paid':
+        bot.answer_callback_query(call.id, "Счет уже был оплачен и зачислен!", show_alert=True)
+        return
+
+    invoice_info = crypto_get_invoice(invoice_id)
+    if invoice_info and invoice_info.get('status') == 'paid':
+        amount_paid = float(invoice_info['amount'])
+        set_invoice_paid(invoice_id)
+        add_user_balance(user_id, amount_paid)
+        
+        bot.answer_callback_query(call.id, "✅ Оплата получена! Средства зачислены на ваш баланс.", show_alert=True)
+        
+        # Сразу пытаемся совершить покупку
+        required_usdt = QUANTITIES[qty_key]['usdt']
+        if deduct_user_balance(user_id, required_usdt):
+            confirm_purchase(user_id)
+            rem_balance = get_user_balance(user_id)
+            msg = f"🎉 **Заказ успешно оплачен!**\n\nЗачислено: `{amount_paid} USDT`\nСписано за товар: `{required_usdt} USDT`\nОстаток баланса: `{rem_balance} USDT`"
+            bot.send_message(user_id, msg, parse_mode='Markdown')
+        else:
+            cur_bal = get_user_balance(user_id)
+            bot.send_message(user_id, f"Ваш баланс пополнен на `{amount_paid} USDT`. Текущий баланс: `{cur_bal} USDT`.", parse_mode='Markdown')
+    else:
+        bot.answer_callback_query(call.id, "⏳ Оплата еще не поступила. Попробуйте через 10-15 секунд.", show_alert=True)
 
 # Обработчик сжатых фото
 @bot.message_handler(content_types=['photo'])
