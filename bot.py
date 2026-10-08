@@ -9,6 +9,10 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import telebot
 from telebot import types
 
+# === НАСТРОЙКА АДМИНА ===
+# Впиши сюда свой ID в Telegram, чтобы загружать товары через бота!
+ADMIN_ID = 123456789 
+
 # 1. Веб-сервер для проверки работоспособности (Health Check для Render)
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -71,6 +75,18 @@ def init_db():
             amount REAL,
             status TEXT DEFAULT 'active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Таблица товаров/кладов
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS goods (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            city TEXT,
+            qty TEXT,
+            description TEXT,
+            photo_id TEXT,
+            is_sold INTEGER DEFAULT 0
         )
     ''')
     
@@ -190,6 +206,52 @@ def confirm_purchase(user_id):
                         print(f"Ошибка при отправке подарка: {e}")
                         
     conn.close()
+
+# === ЛОГИКА ТОВАРОВ И АДМИНКИ ===
+
+def get_and_claim_item(city, qty):
+    """Ищет первый нераспроданный товар и помечает его как проданный."""
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, description, photo_id FROM goods WHERE city = ? AND qty = ? AND is_sold = 0 LIMIT 1', (city, qty))
+    item = cursor.fetchone()
+    
+    if item:
+        item_id, desc, photo = item
+        cursor.execute('UPDATE goods SET is_sold = 1 WHERE id = ?', (item_id,))
+        conn.commit()
+        conn.close()
+        return desc, photo
+        
+    conn.close()
+    return None, None
+
+def deliver_goods(user_id, city_key, qty_key, lang):
+    """Функция выдачи товара пользователю"""
+    desc, photo_id = get_and_claim_item(city_key, qty_key)
+    
+    if desc or photo_id:
+        confirm_purchase(user_id)
+        msg_header = "🎉 **ВАШ ЗАКАЗ УСПЕШНО ВЫДАН!**\n\n📍 **Детали и локация:**\n"
+        full_text = msg_header + (desc if desc else "")
+        
+        if photo_id:
+            try:
+                bot.send_photo(user_id, photo=photo_id, caption=full_text, parse_mode='Markdown')
+            except Exception:
+                bot.send_message(user_id, text=full_text, parse_mode='Markdown')
+        else:
+            bot.send_message(user_id, text=full_text, parse_mode='Markdown')
+        return True
+    else:
+        # Если товара нет в наличии
+        no_stock_msgs = {
+            'geo': "⚠️ К сожалению, данного товара сейчас нет в наличии. Средства сохранены на вашем балансе. Обратитесь к администратору.",
+            'eng': "⚠️ Unfortunately, this item is out of stock. Funds remain on your balance. Please contact admin.",
+            'rus': "⚠️ К сожалению, данного товара нет в наличии. Ваши средства остались на балансе! Напишите администратору."
+        }
+        bot.send_message(user_id, no_stock_msgs.get(lang, no_stock_msgs['rus']))
+        return False
 
 # === ИНТЕГРАЦИЯ CRYPTO BOT API & QR ===
 
@@ -474,7 +536,6 @@ TEXTS = {
     }
 }
 
-# Обновлённые тексты инструкций: добавлены подсказки на русском для кнопок Crypto Bot!
 INSTRUCTIONS = {
     'geo': (
         "ℹ️ **როგორ გადავიხადოთ Crypto Bot-ით:**\n\n"
@@ -712,14 +773,13 @@ def pay_click(call):
     required_usdt = QUANTITIES[qty_key]['usdt']
     current_balance = get_user_balance(user_id)
     
-    # 1. Если на балансе хватает денег — сразу списываем
+    # 1. Если на балансе хватает денег — пытаемся выдать товар
     if current_balance >= required_usdt:
-        deduct_user_balance(user_id, required_usdt)
-        confirm_purchase(user_id)
-        rem_balance = get_user_balance(user_id)
-        
-        msg = f"✅ **Оплата прошла успешно с вашего баланса!**\n\nСписано: `{required_usdt} USDT`\nОстаток на балансе: `{rem_balance} USDT`"
-        bot.send_message(user_id, msg, parse_mode='Markdown')
+        if deduct_user_balance(user_id, required_usdt):
+            success = deliver_goods(user_id, city_key, qty_key, lang)
+            if not success:
+                # Если товара нет — возвращаем списанный баланс обратно
+                add_user_balance(user_id, required_usdt)
         return
 
     # 2. Если баланса не хватает — выставляем счет
@@ -743,7 +803,7 @@ def pay_click(call):
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
         types.InlineKeyboardButton(t['pay_crypto_btn'], url=pay_url),
-        types.InlineKeyboardButton(t['check_pay_btn'], callback_data=f"check_{invoice_id}_{qty_key}_{lang}"),
+        types.InlineKeyboardButton(t['check_pay_btn'], callback_data=f"check_{invoice_id}_{qty_key}_{city_key}_{lang}"),
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"qty_{qty_key}_{city_key}_{lang}")
     )
 
@@ -754,7 +814,8 @@ def check_payment_click(call):
     parts = call.data.split('_')
     invoice_id = int(parts[1])
     qty_key = parts[2]
-    lang = parts[3]
+    city_key = parts[3]
+    lang = parts[4]
     user_id = call.message.chat.id
 
     db_status = get_invoice_status(invoice_id)
@@ -772,20 +833,87 @@ def check_payment_click(call):
         
         required_usdt = QUANTITIES[qty_key]['usdt']
         if deduct_user_balance(user_id, required_usdt):
-            confirm_purchase(user_id)
-            rem_balance = get_user_balance(user_id)
-            msg = f"🎉 **Заказ успешно оплачен!**\n\nЗачислено: `{amount_paid} USDT`\nСписано за товар: `{required_usdt} USDT`\nОстаток баланса: `{rem_balance} USDT`"
-            bot.send_message(user_id, msg, parse_mode='Markdown')
+            success = deliver_goods(user_id, city_key, qty_key, lang)
+            if not success:
+                # Если товара нет — манибэк на внутренний баланс
+                add_user_balance(user_id, required_usdt)
         else:
             cur_bal = get_user_balance(user_id)
             bot.send_message(user_id, f"Ваш баланс пополнен на `{amount_paid} USDT`. Текущий баланс: `{cur_bal} USDT`.", parse_mode='Markdown')
     else:
         bot.answer_callback_query(call.id, "⏳ Оплата еще не поступила. Попробуйте через 10-15 секунд.", show_alert=True)
 
-# Обработчик сжатых фото
+# === АДМИН-КОМАНДЫ ДЛЯ ЗАГРУЗКИ ТОВАРОВ ===
+
+@bot.message_handler(commands=['add'])
+def add_item_cmd(message):
+    """Добавление текстового товара: /add <город> <фасовка> <описание>"""
+    if message.from_user.id != ADMIN_ID:
+        return
+        
+    try:
+        parts = message.text.split(maxsplit=3)
+        city = parts[1]
+        qty = parts[2]
+        desc = parts[3]
+        
+        conn = sqlite3.connect('bot_database.db')
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO goods (city, qty, description) VALUES (?, ?, ?)', (city, qty, desc))
+        conn.commit()
+        conn.close()
+        
+        bot.reply_to(message, f"✅ Товар успешно добавлен!\n\n**Город:** `{city}`\n**Фасовка:** `{qty}`\n**Описание:** {desc}", parse_mode='Markdown')
+    except Exception:
+        bot.reply_to(message, "❌ **Ошибка ввода!**\nФормат: `/add amb 05 Ваше описание и координаты`", parse_mode='Markdown')
+
+@bot.message_handler(commands=['stock'])
+def stock_cmd(message):
+    """Просмотр наличия товаров"""
+    if message.from_user.id != ADMIN_ID:
+        return
+        
+    conn = sqlite3.connect('bot_database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT city, qty, COUNT(*) FROM goods WHERE is_sold = 0 GROUP BY city, qty')
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        bot.reply_to(message, "📦 База товаров пуста!")
+        return
+        
+    res = "📦 **Остатки товаров в наличии:**\n\n"
+    for r in rows:
+        res += f"• **Город:** `{r[0]}` | **Фасовка:** `{r[1]}` | **В наличии:** {r[2]} шт.\n"
+        
+    bot.reply_to(message, res, parse_mode='Markdown')
+
+# Обработчик сжатых фото (Загрузка товаров с фото от Админа)
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     file_id = message.photo[-1].file_id
+    
+    # Если подпись начинается с /add, загружаем клад с картинкой в базу
+    if message.caption and message.caption.startswith('/add') and message.from_user.id == ADMIN_ID:
+        try:
+            parts = message.caption.split(maxsplit=3)
+            city = parts[1]
+            qty = parts[2]
+            desc = parts[3] if len(parts) > 3 else ""
+            
+            conn = sqlite3.connect('bot_database.db')
+            cursor = conn.cursor()
+            cursor.execute('INSERT INTO goods (city, qty, description, photo_id) VALUES (?, ?, ?, ?)', (city, qty, desc, file_id))
+            conn.commit()
+            conn.close()
+            
+            bot.reply_to(message, f"✅ Клад с фото добавлен в базу!\n\n**Город:** `{city}`\n**Фасовка:** `{qty}`", parse_mode='Markdown')
+            return
+        except Exception as e:
+            bot.reply_to(message, f"❌ Ошибка добавления: {e}")
+            return
+            
     bot.send_message(message.chat.id, f"ID картинки:\n\n{file_id}")
 
 # Обработчик документов
