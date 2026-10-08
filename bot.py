@@ -370,7 +370,18 @@ TEXTS = {
         ),
         'checkout_text': "არჩეული გაქვს ქალაქი **{city}**, რაოდენობა **{qty}**, ფასია **{price}**. გადაამოწმე! თუ ყველაფერი სწორია, დააჭირე გადახდას! გირჩევ 5 ლარით მეტი ჩარიცხო, რადგანაც კომისიას მიაქვს, ჩვენი ბრალი არაა.",
         'pay_btn': "💳 გადახდა ({price})",
-        'how_to_pay_btn': "ℹ როგორ გადაიხდო მარტივად"
+        'how_to_pay_btn': "ℹ როგორ გადაიხდო მარტივად",
+        'pay_caption': (
+            "💳 **შეკვეთის გადახდა (USDT)**\n\n"
+            "📌 მიმდინარე ბალანსი: `{balance} USDT`\n"
+            "📌 გადასახდელი: `{need} USDT`\n\n"
+            "📲 **ინსტრუქცია:**\n"
+            "1. დაასკანერეთ QR კოდი ან დააჭირეთ ღილაკს «💳 გადახდა».\n"
+            "2. გადახდის შემდეგ დააჭირეთ **«🔄 შეამოწმე გადახდა»**.\n\n"
+            "💡 *ზედმეტად ჩარიცხული თანხა შეინახება თქვენს ბალანსზე!*"
+        ),
+        'pay_crypto_btn': "💳 გადახდა (Crypto Bot)",
+        'check_pay_btn': "🔄 შეამოწმე გადახდა"
     },
     'eng': {
         'select_city': 'Select a location',
@@ -402,7 +413,18 @@ TEXTS = {
         ),
         'checkout_text': "You selected city **{city}**, quantity **{qty}**, price **{price}**. Double check! If everything is correct, click payment! I recommend topping up by an extra 5 lari, otherwise the commission eats into the amount—that’s not our fault.",
         'pay_btn': "💳 Pay ({price})",
-        'how_to_pay_btn': "ℹ How to pay easily"
+        'how_to_pay_btn': "ℹ How to pay easily",
+        'pay_caption': (
+            "💳 **ORDER PAYMENT (USDT)**\n\n"
+            "📌 Your current balance: `{balance} USDT`\n"
+            "📌 Amount to pay: `{need} USDT`\n\n"
+            "📲 **Instructions:**\n"
+            "1. Scan the QR code above OR click the button below to pay via Crypto Bot.\n"
+            "2. After payment, click **«🔄 Check Payment»**.\n\n"
+            "💡 *Any extra topped-up funds will remain on your balance for future purchases!*"
+        ),
+        'pay_crypto_btn': "💳 Pay (Crypto Bot)",
+        'check_pay_btn': "🔄 Check Payment"
     },
     'rus': {
         'select_city': 'Выберите город',
@@ -434,7 +456,18 @@ TEXTS = {
         ),
         'checkout_text': "Ты выбрал город **{city}**, количество **{qty}**, цена **{price}**. Перепроверь! Если все верно, то жми оплату! Советую пополнить на 5 лари больше, а то комиссия забирает, это не наша вина.",
         'pay_btn': "💳 Оплата ({price})",
-        'how_to_pay_btn': "ℹ Как легко оплатить"
+        'how_to_pay_btn': "ℹ Как легко оплатить",
+        'pay_caption': (
+            "💳 **ОПЛАТА ЗАКАЗА (USDT)**\n\n"
+            "📌 Ваш текущий баланс: `{balance} USDT`\n"
+            "📌 К оплате: `{need} USDT`\n\n"
+            "📲 **Инструкция:**\n"
+            "1. Отсканируйте QR-код выше ИЛИ нажмите кнопку ниже для оплаты через Crypto Bot.\n"
+            "2. После перевода нажмите кнопку **«🔄 Проверить оплату»**.\n\n"
+            "💡 *Все «лишние» зачисленные средства сохранятся на вашем балансе для следующих покупок!*"
+        ),
+        'pay_crypto_btn': "💳 Оплатить (Crypto Bot)",
+        'check_pay_btn': "🔄 Проверить оплату"
     }
 }
 
@@ -654,6 +687,7 @@ def pay_click(call):
     lang = parts[3]
     user_id = call.message.chat.id
     
+    t = TEXTS[lang]
     required_usdt = QUANTITIES[qty_key]['usdt']
     current_balance = get_user_balance(user_id)
     
@@ -683,21 +717,14 @@ def pay_click(call):
     # Генерация QR-кода
     qr_bio = generate_qr_photo(pay_url)
 
-    caption = (
-        f"💳 **ОПЛАТА ЗАКАЗА (USDT)**\n\n"
-        f"📌 Ваш текущий баланс: `{current_balance} USDT`\n"
-        f"📌 К оплате: `{need_to_pay} USDT`\n\n"
-        f"📲 **Инструкция:**\n"
-        f"1. Отсканируйте QR-код выше ИЛИ нажмите кнопку ниже для оплаты через Crypto Bot.\n"
-        f"2. После перевода нажмите кнопку **«🔄 Проверить оплату»**.\n\n"
-        f"💡 *Все «лишние» зачисленные средства сохранятся на вашем балансе для следующих покупок!*"
-    )
+    # Динамический текст под выбранный язык
+    caption = t['pay_caption'].format(balance=current_balance, need=need_to_pay)
 
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
-        types.InlineKeyboardButton("💳 Оплатить (Crypto Bot)", url=pay_url),
-        types.InlineKeyboardButton("🔄 Проверить оплату", callback_data=f"check_{invoice_id}_{qty_key}_{lang}"),
-        types.InlineKeyboardButton(TEXTS[lang]['back_btn'], callback_data=f"qty_{qty_key}_{city_key}_{lang}")
+        types.InlineKeyboardButton(t['pay_crypto_btn'], url=pay_url),
+        types.InlineKeyboardButton(t['check_pay_btn'], callback_data=f"check_{invoice_id}_{qty_key}_{lang}"),
+        types.InlineKeyboardButton(t['back_btn'], callback_data=f"qty_{qty_key}_{city_key}_{lang}")
     )
 
     bot.send_photo(user_id, photo=qr_bio, caption=caption, reply_markup=markup, parse_mode='Markdown')
