@@ -348,6 +348,7 @@ TEXTS = {
         'ref_link_btn': '🔗 ჩემი რეფერალური ბმული',
         'share_btn': '📤 გაუგზავნე მეგობარს',
         'back_btn': '⬅️ უკან',
+        'close_btn': '✖️ დახურვა',
         'how_much': 'აირჩიე რაოდენობა!',
         'q05_btn': '0.5 გრ - 16 USDT (40 GEL)',
         'q1_btn': '1 გრ - 31 USDT (80 GEL)',
@@ -391,6 +392,7 @@ TEXTS = {
         'ref_link_btn': '🔗 My Referral Link',
         'share_btn': '📤 Share with a friend',
         'back_btn': '⬅️ Back',
+        'close_btn': '✖️ Close',
         'how_much': 'Select the quantity!',
         'q05_btn': '0.5 g - 16 USDT (40 GEL)',
         'q1_btn': '1 g - 31 USDT (80 GEL)',
@@ -434,6 +436,7 @@ TEXTS = {
         'ref_link_btn': '🔗 Моя реферальная ссылка',
         'share_btn': '📤 Поделиться с другом',
         'back_btn': '⬅️ Назад',
+        'close_btn': '✖️ Закрыть',
         'how_much': 'Выбери количество!',
         'q05_btn': '0.5 г - 16 USDT (40 GEL)',
         'q1_btn': '1 г - 31 USDT (80 GEL)',
@@ -471,26 +474,27 @@ TEXTS = {
     }
 }
 
+# Обновлённые тексты инструкций: добавлены подсказки на русском для кнопок Crypto Bot!
 INSTRUCTIONS = {
     'geo': (
         "ℹ️ **როგორ გადავიხადოთ Crypto Bot-ით:**\n\n"
         "1. დააჭირეთ ღილაკს **«💳 გადახდა (Crypto Bot)»** ქვემოთ.\n"
-        "2. გახსნილ ჩატში დააჭირეთ **Оплатить**.\n"
-        "3. თუ ანგარიშზე არ გაქვთ USDT, აირჩიეთ **Пополнить** და გადაიხადეთ ნებისმიერი ბარათით ან крипто-საფულით (Trust Wallet / Binance / TON).\n"
+        "2. გახსნილ ჩატში დააჭირეთ **გადახდას («Оплатить»)**.\n"
+        "3. თუ ანგარიშზე არ გაქვთ USDT, აირჩიეთ **შევსება («Пополнить»)** და გადაიხადეთ ნებისმიერი ბარათით ან крипто-საფულით (Trust Wallet / Binance / TON).\n"
         "4. გადახდის შემდეგ დაბრუნდით ბოტში და დააჭირეთ **«🔄 შეამოწმე გადახდა»**."
     ),
     'eng': (
         "ℹ️ **How to pay via Crypto Bot:**\n\n"
         "1. Click the **«💳 Pay (Crypto Bot)»** button below.\n"
-        "2. In the opened chat, click **Pay**.\n"
-        "3. If you don't have USDT in your balance, select **Top Up** and pay using any card or wallet (Trust Wallet / Binance / TON).\n"
+        "2. In the opened chat, click **Pay («Оплатить»)**.\n"
+        "3. If you don't have USDT, select **Top Up («Пополнить»)** and pay using any card or wallet (Trust Wallet / Binance / TON).\n"
         "4. After payment, return to this bot and click **«🔄 Check Payment»**."
     ),
     'rus': (
         "ℹ️ **Как легко оплатить через Crypto Bot:**\n\n"
         "1. Нажмите кнопку **«💳 Оплатить (Crypto Bot)»** ниже.\n"
         "2. В открывшемся чате нажмите **Оплатить**.\n"
-        "3. Если у вас нет USDT на балансе, выберите **Пополнить** и оплатите с любой карты или внешнего кошелька (Trust Wallet / Binance / TON / QR-код).\n"
+        "3. Если у вас нет USDT на балансе, выберите **Пополнить** и оплатите с любой карты или кошелька (Trust Wallet / Binance / TON).\n"
         "4. После оплаты вернитесь в этого бота и нажмите кнопку **«🔄 Проверить оплату»**."
     )
 }
@@ -671,12 +675,29 @@ def qty_click(call):
 
     safe_send(call.message.chat.id, call.message.id, photo_file_id, text, markup, parse_mode='Markdown')
 
+# Показ инструкции с кнопкой закрытия
 @bot.callback_query_handler(func=lambda call: call.data.startswith('howpay_'))
 def how_pay_click(call):
     bot.answer_callback_query(call.id)
     lang = call.data.split('_')[1]
     text = INSTRUCTIONS.get(lang, INSTRUCTIONS['rus'])
-    bot.send_message(call.message.chat.id, text, parse_mode='Markdown')
+    t = TEXTS.get(lang, TEXTS['rus'])
+    
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        types.InlineKeyboardButton(t['close_btn'], callback_data="close_instruction")
+    )
+    
+    bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode='Markdown')
+
+# Кнопка для быстрого закрытия сообщения с инструкцией
+@bot.callback_query_handler(func=lambda call: call.data == 'close_instruction')
+def close_instruction(call):
+    bot.answer_callback_query(call.id)
+    try:
+        bot.delete_message(call.message.chat.id, call.message.id)
+    except Exception:
+        pass
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
 def pay_click(call):
@@ -717,7 +738,6 @@ def pay_click(call):
     # Генерация QR-кода
     qr_bio = generate_qr_photo(pay_url)
 
-    # Динамический текст под выбранный язык
     caption = t['pay_caption'].format(balance=current_balance, need=need_to_pay)
 
     markup = types.InlineKeyboardMarkup(row_width=1)
