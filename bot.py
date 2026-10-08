@@ -201,15 +201,16 @@ def crypto_create_invoice(amount, asset="USDT"):
     url = "https://pay.crypt.bot/api/createInvoice"
     headers = {"Crypto-Pay-API-Token": CRYPTO_PAY_TOKEN.strip()}
     
-    # Форматирование суммы: убираем лишние нули (например 16.0 -> "16")
     formatted_amount = str(int(amount)) if amount == int(amount) else str(amount)
+    bot_url = f"https://t.me/{BOT_USERNAME}" if BOT_USERNAME else "https://t.me"
     
     payload = {
         "currency_type": "crypto",
         "asset": asset,
         "amount": formatted_amount,
         "description": "Top-up balance in bot",
-        "paid_btn_name": "openBot"
+        "paid_btn_name": "openBot",
+        "paid_btn_url": bot_url
     }
     
     try:
@@ -645,7 +646,6 @@ def how_pay_click(call):
     bot.send_message(call.message.chat.id, text, parse_mode='Markdown')
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
-@bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
 def pay_click(call):
     bot.answer_callback_query(call.id)
     parts = call.data.split('_')
@@ -657,7 +657,7 @@ def pay_click(call):
     required_usdt = QUANTITIES[qty_key]['usdt']
     current_balance = get_user_balance(user_id)
     
-    # 1. Если на балансе хватает денег
+    # 1. Если на балансе хватает денег — сразу списываем
     if current_balance >= required_usdt:
         deduct_user_balance(user_id, required_usdt)
         confirm_purchase(user_id)
@@ -670,38 +670,9 @@ def pay_click(call):
     # 2. Если баланса не хватает — выставляем счет
     need_to_pay = round(required_usdt - current_balance, 2)
     
-    # ВЫЗОВ API
-    if not CRYPTO_PAY_TOKEN:
-        bot.send_message(user_id, "❌ **Ошибка:** Переменная CRYPTO_PAY_TOKEN пустая на Render!")
-        return
-
-    url = "https://pay.crypt.bot/api/createInvoice"
-    headers = {"Crypto-Pay-API-Token": CRYPTO_PAY_TOKEN.strip()}
-    payload = {
-        "currency_type": "crypto",
-        "asset": "USDT",
-        "amount": str(int(need_to_pay)) if need_to_pay == int(need_to_pay) else str(need_to_pay),
-        "description": "Top-up balance in bot",
-        "paid_btn_name": "openBot"
-    }
-    
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-        res = response.json()
-        
-        if not res.get("ok"):
-            # ВЫВОДИМ ТОЧНЫЙ ОТВЕТ ОТ CRYPTO BOT ПРЯМО В ЧАТ
-            error_details = res.get("error", {})
-            bot.send_message(
-                user_id, 
-                f"❌ **Ошибка CryptoBot API:**\n`Код {error_details.get('code')}: {error_details.get('name')}`",
-                parse_mode='Markdown'
-            )
-            return
-            
-        invoice = res["result"]
-    except Exception as e:
-        bot.send_message(user_id, f"❌ **Исключение сети:** `{e}`", parse_mode='Markdown')
+    invoice = crypto_create_invoice(need_to_pay)
+    if not invoice:
+        bot.send_message(user_id, "❌ Ошибка создания чека. Попробуйте позже.")
         return
 
     invoice_id = invoice['invoice_id']
