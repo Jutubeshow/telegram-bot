@@ -672,12 +672,15 @@ def get_ref_link(call):
         types.InlineKeyboardButton(t['back_btn'], callback_data=f"show_gift_{lang}")
     )
     
+    # 1. Обновляем главное меню со статистикой
     safe_send(user_id, call.message.id, gift_photo_id, stats_msg, markup, parse_mode='Markdown')
     
+    # 2. Отправляем отдельное сообщение с реф. ссылкой, кнопкой шеринга и кнопкой "Закрыть"
     share_text = t['share_msg_text'].format(link=link)
     share_markup = types.InlineKeyboardMarkup(row_width=1)
     share_markup.add(
-        types.InlineKeyboardButton(t['share_btn'], switch_inline_query=f"\nПользуйся ботом: {link}")
+        types.InlineKeyboardButton(t['share_btn'], switch_inline_query=f"\nПользуйся ботом: {link}"),
+        types.InlineKeyboardButton(t['close_btn'], callback_data="close_instruction")  # Используем ту же универсальную кнопку закрытия!
     )
     
     bot.send_message(user_id, text=share_text, reply_markup=share_markup, parse_mode='Markdown')
